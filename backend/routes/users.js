@@ -1,0 +1,83 @@
+import express from 'express'
+import bcrypt from 'bcryptjs'
+import User from '../models/User.js'
+import { authGuard } from '../middleware/auth.js'
+import { allowRoles } from '../middleware/roles.js'
+
+const router = express.Router()
+
+router.use(authGuard)
+// @route   GET api/users/profile
+// @desc    Get current user profile (Self)
+router.get('/profile', async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+router.get('/', allowRoles('admin'), async (req, res) => {
+  const users = await User.find().select('-password')
+  res.json(users)
+})
+
+// @route   GET api/users/branches
+// @desc    Get all unique branches (Admin/TL)
+router.get('/branches', allowRoles('admin', 'team_leader'), async (req, res) => {
+  try {
+    const branches = await User.distinct('branch');
+    res.json(branches.filter(b => b)); // Filter out empty branches
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch branches' });
+  }
+})
+
+// @route   GET api/users/team
+// @desc    Get employees in the same branch (Admin/TL)
+router.get('/team', allowRoles('admin', 'team_leader'), async (req, res) => {
+  try {
+    let query = { role: 'employee' };
+    if (req.user.role === 'team_leader') {
+      query.branch = req.user.branch;
+    }
+    const employees = await User.find(query).select('name email role branch team');
+    res.json(employees);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch team' });
+  }
+})
+
+router.post('/', allowRoles('admin'), async (req, res) => {
+  const { name, email, phone, role, team, password } = req.body
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: 'Name, email and password are required' })
+  }
+  const existing = await User.findOne({ email })
+  if (existing) {
+    return res.status(400).json({ message: 'Email already exists' })
+  }
+  const hashed = await bcrypt.hash(password, 10)
+  const user = new User({ name, email, phone, role, team, password: hashed })
+  await user.save()
+  res.status(201).json({ message: 'Employee created', user: { id: user._id, name, email, role, team, phone } })
+})
+
+router.put('/:id', allowRoles('admin'), async (req, res) => {
+  const updates = { ...req.body }
+  if (updates.password) {
+    updates.password = await bcrypt.hash(updates.password, 10)
+  }
+  const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select('-password')
+  if (!user) return res.status(404).json({ message: 'User not found' })
+  res.json(user)
+})
+
+router.delete('/:id', allowRoles('admin'), async (req, res) => {
+  const user = await User.findByIdAndDelete(req.params.id)
+  if (!user) return res.status(404).json({ message: 'User not found' })
+  res.json({ message: 'Employee deleted' })
+})
+
+export default router
