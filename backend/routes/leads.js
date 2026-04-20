@@ -2,7 +2,9 @@ import express from 'express';
 import multer from 'multer';
 import csv from 'csv-parser';
 import fs from 'fs';
+import ExcelJS from 'exceljs';
 import Lead from '../models/Lead.js';
+import User from '../models/User.js';
 import { authGuard } from '../middleware/auth.js';
 import { allowRoles } from '../middleware/roles.js';
 
@@ -10,33 +12,66 @@ const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
 
 // @route   POST api/leads/import
-// @desc    Import leads from CSV (Admin/TL)
+// @desc    Import leads from CSV or XLSX (Admin/TL)
 router.post('/import', [authGuard, allowRoles('admin', 'team_leader'), upload.single('file')], async (req, res) => {
-  if (!req.file) return res.status(400).json({ message: 'Please upload a CSV file' });
+  if (!req.file) return res.status(400).json({ message: 'Please upload a file' });
 
   const results = [];
-  fs.createReadStream(req.file.path)
-    .pipe(csv())
-    .on('data', (data) => results.push(data))
-    .on('end', async () => {
-      try {
-        const leads = results.map(item => ({
-          name: item.name || item.customerName,
-          phone: item.phone || item.phoneNumber,
-          email: item.email,
-          city: item.city,
-          vehicleNumber: item.vehicleNumber,
-          assignedBy: req.user._id,
-          status: 'new'
-        }));
+  const filePath = req.file.path;
+  const isExcel = req.file.originalname.endsWith('.xlsx') || req.file.originalname.endsWith('.xls');
 
-        await Lead.insertMany(leads);
-        fs.unlinkSync(req.file.path); 
-        res.json({ message: `${leads.length} leads imported successfully` });
-      } catch (err) {
-        res.status(500).json({ message: 'Error saving leads to database' });
-      }
-    });
+  try {
+    if (isExcel) {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(filePath);
+      const worksheet = workbook.getWorksheet(1);
+      
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber > 1) { // Skip header
+          const data = {
+            name: row.getCell(1).value,
+            phone: row.getCell(2).value?.toString(),
+            email: row.getCell(3).value,
+            city: row.getCell(4).value,
+            vehicleNumber: row.getCell(5).value,
+          };
+          results.push(data);
+        }
+      });
+    } else {
+      // Handle CSV
+      await new Promise((resolve, reject) => {
+        fs.createReadStream(filePath)
+          .pipe(csv())
+          .on('data', (data) => results.push(data))
+          .on('end', resolve)
+          .on('error', reject);
+      });
+    }
+
+    const leads = results.map(item => ({
+      name: item.name || item.customerName,
+      phone: item.phone || item.phoneNumber,
+      email: typeof item.email === 'object' ? item.email.text : item.email,
+      city: item.city,
+      vehicleNumber: item.vehicleNumber,
+      assignedBy: req.user._id,
+      status: 'new'
+    })).filter(l => l.name && l.phone);
+
+    if (leads.length === 0) {
+      fs.unlinkSync(filePath);
+      return res.status(400).json({ message: 'No valid leads found in file' });
+    }
+
+    await Lead.insertMany(leads);
+    fs.unlinkSync(filePath); 
+    res.json({ message: `${leads.length} leads imported successfully` });
+  } catch (err) {
+    console.error('Import error:', err);
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    res.status(500).json({ message: 'Error processing file' });
+  }
 });
 
 // @route   GET api/leads

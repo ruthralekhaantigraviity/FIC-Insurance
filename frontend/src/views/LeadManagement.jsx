@@ -9,6 +9,7 @@ import {
   CreditCard, PhoneCall
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'react-toastify';
 
 const LeadManagement = () => {
   const { user } = useContext(AuthContext);
@@ -55,8 +56,9 @@ const LeadManagement = () => {
       fetchLeads();
       setSelectedLeads([]);
       setShowAssignModal(false);
+      toast.success(`Successfully assigned to ${employees.find(e => e._id === employeeId)?.name}`);
     } catch (err) {
-      alert('Bulk assignment failed');
+      toast.error('Bulk assignment failed');
     } finally {
       setAssigningLoading(false);
     }
@@ -121,8 +123,9 @@ const LeadManagement = () => {
       fetchLeads();
       setShowWorkspace(false);
       setStatusUpdate({ status: '', insuranceType: '', note: '', premium: '' });
+      toast.success('Lead transformation successful');
     } catch (err) {
-      alert('Failed to update lead status');
+      toast.error('Failed to update lead status');
     } finally {
       setIsUpdating(false);
     }
@@ -140,8 +143,9 @@ const LeadManagement = () => {
       });
       fetchLeads();
       setNewNote('');
+      toast.info('Note synchronized');
     } catch (err) {
-      alert('Failed to add note');
+      toast.error('Failed to add note');
     }
   };
 
@@ -150,18 +154,33 @@ const LeadManagement = () => {
     if (!file) return;
     const formData = new FormData();
     formData.append('file', file);
-    try {
-      await axios.post('/api/leads/import', formData, {
-        headers: { 
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
+    
+    const importPromise = axios.post('/api/leads/import', formData, {
+      headers: { 
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+
+    toast.promise(
+      importPromise,
+      {
+        pending: 'Injecting dataset into terminal...',
+        success: {
+          render({data}) {
+            fetchLeads();
+            setShowImportModal(false);
+            setFile(null);
+            return data.data.message || 'Dataset synchronized successfully';
+          }
+        },
+        error: {
+          render({data}) {
+            return data.response?.data?.message || 'Injection failed. Check file schema.';
+          }
         }
-      });
-      setShowImportModal(false);
-      fetchLeads();
-    } catch (err) {
-      alert('Import failed');
-    }
+      }
+    );
   };
 
   const statusMap = {
@@ -187,11 +206,14 @@ const LeadManagement = () => {
       }, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
-      alert(`Payment Link Generated: ${res.data.link}`);
+      toast.success('Secure Payment Link Generated');
+      // Copy to clipboard or show in a better way
+      navigator.clipboard.writeText(res.data.link);
+      toast.info('Link copied to clipboard');
       fetchLeads();
       setShowWorkspace(false);
     } catch (err) {
-      alert('Failed to generate payment link');
+      toast.error('Failed to generate payment link');
     }
   };
 
