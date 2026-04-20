@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import DashboardLayout from './components/layout/DashboardLayout';
+import DashboardLayout from './components/Layout/DashboardLayout';
 import Login from './views/Login';
 import Dashboard from './views/Dashboard';
 import LeadManagement from './views/LeadManagement';
