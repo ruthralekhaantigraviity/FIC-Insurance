@@ -60,3 +60,29 @@ curl -X POST http://localhost:5000/api/seed
 - Frontend runs on `http://localhost:4173`
 - Backend runs on `http://localhost:5000`
 - API proxy is configured in `frontend/vite.config.js`
+
+## Deployment
+
+### Backend on Render
+
+1. Go to [Render](https://render.com/) and create a new **Web Service** from this GitHub repo.
+2. Configure:
+   - Root Directory: `backend`
+   - Build Command: `npm install`
+   - Start Command: `npm start`
+3. Add environment variables:
+   - `MONGO_URI` (or `MONGODB_URI`) = your MongoDB connection string
+   - `JWT_SECRET` = a long secure secret
+4. Deploy and copy your backend URL (example: `https://fic-backend.onrender.com`).
+
+### Frontend on Vercel
+
+1. Go to [Vercel](https://vercel.com/) and import the same GitHub repo.
+2. Configure project:
+   - Root Directory: `frontend`
+   - Framework Preset: `Vite`
+   - Build Command: `npm run build`
+   - Output Directory: `dist`
+3. Add environment variable:
+   - `VITE_API_BASE_URL` = `https://your-render-backend.onrender.com/api`
+4. Deploy.
