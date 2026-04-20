@@ -24,19 +24,27 @@ copy .env.example .env
 2. Install dependencies:
 
 ```bash
-npm install
-cd frontend && npm install
+cd backend && npm install
+cd ../frontend && npm install
 ```
 
 3. Start MongoDB locally or update `MONGO_URI` in `backend/.env`.
 
-4. Run both servers from the root:
+4. Run backend server:
 
 ```bash
-npm start
+cd backend
+npm run dev
 ```
 
-5. Seed sample data:
+5. Run frontend app:
+
+```bash
+cd frontend
+npm run dev
+```
+
+6. Seed sample data:
 
 ```bash
 curl -X POST http://localhost:5000/api/seed
