@@ -47,25 +47,25 @@ const Payments = () => {
   };
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 sm:space-y-8 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[var(--bg-card)] p-8 rounded-[2rem] border border-[var(--border-light)] shadow-sm">
+      <div className="flex flex-col gap-4 bg-[var(--bg-card)] p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-[var(--border-light)] shadow-sm">
         <div>
-          <h2 className="text-3xl font-black text-[var(--text-main)]">Payment Tracking</h2>
-          <p className="text-[var(--text-muted)] font-medium mt-1">
+          <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-main)]">Payment Tracking</h2>
+          <p className="text-[var(--text-muted)] font-medium mt-1 text-sm">
             Monitor transaction status, payment links, and premium collection.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button className="btn-secondary">
-            <Download size={18} />
+            <Download size={16} />
             <span>Export CSV</span>
           </button>
         </div>
       </div>
 
       {/* Mini Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {[
           { label: 'Total Volume', value: `₹${stats.totalVolume.toLocaleString()}`, icon: CreditCard, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Completed', value: stats.completed, icon: CheckCircle, color: 'text-green-600', bg: 'bg-green-50' },
@@ -86,9 +86,9 @@ const Payments = () => {
 
       {/* Table Section */}
       <div className="card !p-0 border-none shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-[var(--border-light)] flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center bg-[var(--bg-main)] border border-[var(--border-light)] rounded-2xl px-4 py-2 w-full md:w-96 group focus-within:border-primary transition-all">
-            <Search size={18} className="text-[var(--text-muted)] group-focus-within:text-primary" />
+        <div className="p-5 sm:p-8 border-b border-[var(--border-light)] flex flex-col gap-4">
+          <div className="flex items-center bg-[var(--bg-main)] border border-[var(--border-light)] rounded-2xl px-4 py-2 w-full sm:w-96 group focus-within:border-primary transition-all">
+            <Search size={18} className="text-[var(--text-muted)] group-focus-within:text-primary flex-shrink-0" />
             <input 
               type="text" 
               placeholder="Search leads or method..." 
@@ -98,7 +98,7 @@ const Payments = () => {
             />
           </div>
           
-          <div className="flex items-center gap-3 overflow-x-auto pb-2 md:pb-0">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
             {['all', 'completed', 'pending'].map((s) => (
               <button
                 key={s}

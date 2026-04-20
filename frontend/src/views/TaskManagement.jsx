@@ -70,16 +70,16 @@ const TaskManagement = () => {
   };
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 sm:space-y-8 pb-12">
       {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[var(--bg-card)] p-8 rounded-[2rem] border border-[var(--border-light)] shadow-sm">
+      <div className="flex flex-col gap-4 bg-[var(--bg-card)] p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-[var(--border-light)] shadow-sm">
         <div>
-          <h2 className="text-3xl font-black text-[var(--text-main)]">Task Management</h2>
-          <p className="text-[var(--text-muted)] font-medium mt-1">Assign and track operational tasks across your team.</p>
+          <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-main)]">Task Management</h2>
+          <p className="text-[var(--text-muted)] font-medium mt-1 text-sm">Assign and track operational tasks across your team.</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="btn-primary group"
+          className="btn-primary group w-fit"
         >
           <Plus size={18} className="group-hover:rotate-90 transition-transform duration-200" />
           <span>New Task</span>
@@ -87,7 +87,7 @@ const TaskManagement = () => {
       </div>
 
       {/* Task Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         <AnimatePresence>
           {loading ? (
             [1, 2, 3].map(i => (

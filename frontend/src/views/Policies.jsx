@@ -47,23 +47,23 @@ const Policies = () => {
   };
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 sm:space-y-8 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[var(--bg-card)] p-8 rounded-[2rem] border border-[var(--border-light)] shadow-sm">
+      <div className="flex flex-col gap-4 bg-[var(--bg-card)] p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-[var(--border-light)] shadow-sm">
         <div>
-          <h2 className="text-3xl font-black text-[var(--text-main)]">Policy Repository</h2>
-          <p className="text-[var(--text-muted)] font-medium mt-1">
+          <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-main)]">Policy Repository</h2>
+          <p className="text-[var(--text-muted)] font-medium mt-1 text-sm">
             Centralized hub for all issued certificates, renewals, and risk coverage tracking.
           </p>
         </div>
-        <button className="btn-secondary">
-          <Download size={18} />
+        <button className="btn-secondary w-fit">
+          <Download size={16} />
           <span>Export Register</span>
         </button>
       </div>
 
       {/* Grid Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {[
           { label: 'Total Premium', value: `₹${totals.premium.toLocaleString()}`, icon: TrendingUp, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'OD Policies', value: totals.od, icon: ShieldCheck, color: 'text-indigo-600', bg: 'bg-indigo-50' },
@@ -84,9 +84,9 @@ const Policies = () => {
 
       {/* Table Section */}
       <div className="card !p-0 border-none shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-[var(--border-light)] flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center bg-[var(--bg-main)] border border-[var(--border-light)] rounded-2xl px-5 py-2.5 w-full md:w-96 group focus-within:border-primary transition-all">
-            <Search size={18} className="text-[var(--text-muted)] group-focus-within:text-primary" />
+        <div className="p-5 sm:p-8 border-b border-[var(--border-light)] flex flex-col gap-4">
+          <div className="flex items-center bg-[var(--bg-main)] border border-[var(--border-light)] rounded-2xl px-4 sm:px-5 py-2.5 w-full sm:w-96 group focus-within:border-primary transition-all">
+            <Search size={18} className="text-[var(--text-muted)] group-focus-within:text-primary flex-shrink-0" />
             <input 
               type="text" 
               placeholder="Search Policy No or Customer..." 
@@ -96,12 +96,12 @@ const Policies = () => {
             />
           </div>
           
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
             {['all', 'od', 'third_party'].map((t) => (
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
-                className={`px-6 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
+                className={`px-4 sm:px-6 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
                   typeFilter === t 
                   ? 'bg-primary text-white shadow-lg' 
                   : 'bg-[var(--bg-main)] text-[var(--text-muted)] border border-[var(--border-light)] hover:bg-[var(--bg-card)]'
