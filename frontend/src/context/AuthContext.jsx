@@ -30,7 +30,10 @@ export const AuthProvider = ({ children }) => {
       setUser(res.data.user);
       return { success: true };
     } catch (err) {
-      return { success: false, message: err.response?.data?.message || 'Login failed' };
+      return {
+        success: false,
+        message: err.response?.data?.message || 'Login failed. Check backend URL and CORS settings.',
+      };
     }
   };
 
