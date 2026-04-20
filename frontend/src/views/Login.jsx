@@ -192,14 +192,6 @@ const Login = () => {
               </button>
             </form>
 
-            {/* Hint */}
-            <div className="mt-8 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Demo Credentials</p>
-              <div className="space-y-1 text-xs font-medium text-gray-600">
-                <p><span className="font-bold text-gray-400">Admin:</span> admin@fic.com / admin123</p>
-                <p><span className="font-bold text-gray-400">Agent:</span> rahul@fic.com / password123</p>
-              </div>
-            </div>
           </motion.div>
         </div>
       </motion.div>

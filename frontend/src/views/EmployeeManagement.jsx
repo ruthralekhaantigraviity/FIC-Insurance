@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { 
   UserPlus, Mail, Shield, MapPin, 
@@ -44,10 +44,7 @@ const EmployeeManagement = () => {
 
   const fetchEmployees = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('/api/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('/users');
       let data = res.data;
       if (user?.role === 'team_leader') {
         data = data.filter(emp => emp.branch === user.branch);
@@ -81,16 +78,11 @@ const EmployeeManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
       if (editingId) {
-        await axios.put(`/api/users/${editingId}`, formData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.put(`/users/${editingId}`, formData);
         toast.success('Employee details updated!');
       } else {
-        await axios.post('/api/users', formData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.post('/users', formData);
         toast.success('Employee successfully added!');
       }
       closeModal();
@@ -103,10 +95,7 @@ const EmployeeManagement = () => {
   const handleDelete = async (empId, empName) => {
     if (!window.confirm(`Are you sure you want to permanently remove ${empName}?`)) return;
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`/api/users/${empId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/users/${empId}`);
       toast.success(`${empName} has been removed.`);
       fetchEmployees();
     } catch (err) {
@@ -124,13 +113,15 @@ const EmployeeManagement = () => {
             Manage team profiles, roles, and branch assignments.
           </p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="btn-primary group"
-        >
-          <UserPlus size={18} className="group-hover:scale-110 transition-transform" />
-          <span>Add Employee</span>
-        </button>
+        {user?.role === 'admin' && (
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="btn-primary group"
+          >
+            <UserPlus size={18} className="group-hover:scale-110 transition-transform" />
+            <span>Add New Staff</span>
+          </button>
+        )}
       </div>
 
       {/* Employee Grid */}
@@ -165,22 +156,24 @@ const EmployeeManagement = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => handleDelete(emp._id, emp.name)}
-                      className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-400 hover:text-red-600 hover:bg-red-100 border border-red-100 transition-all z-10"
-                      title="Remove Staff"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                    <button 
-                      onClick={() => openEditModal(emp)}
-                      className="w-8 h-8 flex items-center justify-center rounded-xl bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-primary hover:bg-primary/10 border border-[var(--border-light)] transition-all z-10"
-                      title="Edit Profile"
-                    >
-                      <Edit3 size={14} />
-                    </button>
-                  </div>
+                  {user?.role === 'admin' && (
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleDelete(emp._id, emp.name)}
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-red-50 text-red-400 hover:text-red-600 hover:bg-red-100 border border-red-100 transition-all z-10"
+                        title="Remove Staff"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                      <button 
+                        onClick={() => openEditModal(emp)}
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-primary hover:bg-primary/10 border border-[var(--border-light)] transition-all z-10"
+                        title="Edit Profile"
+                      >
+                        <Edit3 size={14} />
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Contact Details */}
@@ -260,7 +253,7 @@ const EmployeeManagement = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Email Address</label>
+                  <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Email Address (Username)</label>
                   <input
                     type="email"
                     required
@@ -271,6 +264,19 @@ const EmployeeManagement = () => {
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                   />
                 </div>
+                {!editingId && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Initial Password</label>
+                    <input
+                      type="text"
+                      required
+                      className="input-field"
+                      placeholder="Enter temporary password"
+                      value={formData.password}
+                      onChange={(e) => setFormData({...formData, password: e.target.value})}
+                    />
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-5">
                   <div>
                     <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Role</label>

@@ -48,18 +48,22 @@ const Policies = () => {
 
   return (
     <div className="space-y-6 sm:space-y-8 pb-12">
-      {/* Header */}
-      <div className="flex flex-col gap-4 bg-[var(--bg-card)] p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-[var(--border-light)] shadow-sm">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-[var(--bg-card)] p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-[var(--border-light)] shadow-sm">
         <div>
           <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-main)]">Policy Repository</h2>
           <p className="text-[var(--text-muted)] font-medium mt-1 text-sm">
             Centralized hub for all issued certificates, renewals, and risk coverage tracking.
           </p>
         </div>
-        <button className="btn-secondary w-fit">
-          <Download size={16} />
-          <span>Export Register</span>
-        </button>
+        <div className="flex items-center gap-3 xl:justify-end">
+          <button 
+            onClick={() => window.open('/api/reports/export/policies', '_blank')}
+            className="flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-blue-900/20 hover:scale-105 transition-all"
+          >
+            <Download size={18} />
+            <span>Export CSV</span>
+          </button>
+        </div>
       </div>
 
       {/* Grid Stats */}

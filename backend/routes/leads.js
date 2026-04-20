@@ -156,4 +156,36 @@ router.put('/assign', [authGuard, allowRoles('admin', 'team_leader')], async (re
   }
 });
 
+// @route   DELETE api/leads/bulk
+// @desc    Delete multiple leads (Admin/TL)
+router.delete('/bulk', [authGuard, allowRoles('admin', 'team_leader')], async (req, res) => {
+  try {
+    const { leadIds } = req.body;
+    if (!leadIds || !Array.isArray(leadIds) || leadIds.length === 0) {
+      return res.status(400).json({ message: 'Lead IDs are required' });
+    }
+    
+    await Lead.deleteMany({ _id: { $in: leadIds } });
+    res.json({ message: `Successfully deleted ${leadIds.length} leads` });
+  } catch (err) {
+    console.error('Bulk delete error:', err);
+    res.status(500).json({ message: 'Failed to delete leads' });
+  }
+});
+
+// @route   DELETE api/leads/:id
+// @desc    Delete a lead (Admin/TL)
+router.delete('/:id', [authGuard, allowRoles('admin', 'team_leader')], async (req, res) => {
+  try {
+    const lead = await Lead.findById(req.params.id);
+    if (!lead) return res.status(404).json({ message: 'Lead not found' });
+    
+    await lead.deleteOne();
+    res.json({ message: 'Lead deleted successfully' });
+  } catch (err) {
+    console.error('Delete error:', err);
+    res.status(500).json({ message: 'Failed to delete lead' });
+  }
+});
+
 export default router;

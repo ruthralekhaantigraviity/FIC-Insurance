@@ -50,28 +50,33 @@ router.get('/team', allowRoles('admin', 'team_leader'), async (req, res) => {
 })
 
 router.post('/', allowRoles('admin'), async (req, res) => {
-  const { name, email, phone, role, team, password } = req.body
+  const { name, email, phone, role, team, branch, password } = req.body
   if (!name || !email || !password) {
     return res.status(400).json({ message: 'Name, email and password are required' })
   }
-  const existing = await User.findOne({ email })
+  const normalizedEmail = String(email).trim().toLowerCase()
+  const existing = await User.findOne({ email: normalizedEmail })
   if (existing) {
     return res.status(400).json({ message: 'Email already exists' })
   }
-  const hashed = await bcrypt.hash(password, 10)
-  const user = new User({ name, email, phone, role, team, password: hashed })
+  const user = new User({ name, email: normalizedEmail, phone, role, team, branch, password })
   await user.save()
-  res.status(201).json({ message: 'Employee created', user: { id: user._id, name, email, role, team, phone } })
+  res.status(201).json({ message: 'Employee created', user: { id: user._id, name, email: normalizedEmail, role, team, phone, branch } })
 })
 
 router.put('/:id', allowRoles('admin'), async (req, res) => {
   const updates = { ...req.body }
-  if (updates.password) {
-    updates.password = await bcrypt.hash(updates.password, 10)
-  }
-  const user = await User.findByIdAndUpdate(req.params.id, updates, { new: true }).select('-password')
+  // Don't hash password here, model pre-save hook handles it if modified
+  const user = await User.findById(req.params.id)
   if (!user) return res.status(404).json({ message: 'User not found' })
-  res.json(user)
+  
+  Object.keys(updates).forEach(key => {
+    user[key] = updates[key]
+  })
+  
+  await user.save()
+  const updatedUser = await User.findById(user._id).select('-password')
+  res.json(updatedUser)
 })
 
 router.delete('/:id', allowRoles('admin'), async (req, res) => {

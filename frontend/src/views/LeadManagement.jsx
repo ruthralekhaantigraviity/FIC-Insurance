@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import { 
   Upload, UserPlus, Filter, Search, 
   MoreHorizontal, Download, CheckCircle, Clock,
   Car, Briefcase, TrendingUp, AlertCircle,
   Heart, Shield, Zap, Activity, ChevronRight, X, ArrowLeft,
-  CreditCard, PhoneCall
+  CreditCard, PhoneCall, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -35,9 +35,7 @@ const LeadManagement = () => {
 
   const fetchEmployees = async () => {
     try {
-      const res = await axios.get('/api/users/team', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await api.get('/users/team');
       setEmployees(res.data);
     } catch (err) {
       console.error('Failed to fetch team members');
@@ -47,11 +45,9 @@ const LeadManagement = () => {
   const handleBulkAssign = async (employeeId) => {
     setAssigningLoading(true);
     try {
-      await axios.put('/api/leads/assign', {
+      await api.put('/leads/assign', {
         leadIds: selectedLeads,
         employeeId
-      }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       fetchLeads();
       setSelectedLeads([]);
@@ -61,6 +57,32 @@ const LeadManagement = () => {
       toast.error('Bulk assignment failed');
     } finally {
       setAssigningLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`Are you sure you want to delete ${selectedLeads.length} leads?`)) return;
+    try {
+      await api.delete('/leads/bulk', {
+        data: { leadIds: selectedLeads }
+      });
+      fetchLeads();
+      setSelectedLeads([]);
+      toast.success(`Deleted ${selectedLeads.length} leads successfully`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Bulk delete failed');
+    }
+  };
+
+  const handleDeleteLead = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this lead?')) return;
+    try {
+      await api.delete(`/leads/${id}`);
+      fetchLeads();
+      toast.success('Lead deleted successfully');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Delete failed');
     }
   };
 
@@ -81,17 +103,14 @@ const LeadManagement = () => {
   const handleCallInitiated = (lead) => {
     console.log(`Dialing ${lead.phone}...`);
     if (lead.status === 'new') {
-      axios.put(`/api/leads/${lead._id}/status`, { status: 'called', note: 'Call initiated via terminal dialer' }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      }).then(() => fetchLeads());
+      api.put(`/leads/${lead._id}/status`, { status: 'called', note: 'Call initiated via terminal dialer' })
+         .then(() => fetchLeads());
     }
   };
 
   const fetchLeads = async () => {
     try {
-      const res = await axios.get('/api/leads', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await api.get('/leads');
       setLeads(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error('Failed to fetch leads');
@@ -104,21 +123,16 @@ const LeadManagement = () => {
     e.preventDefault();
     setIsUpdating(true);
     try {
-      const token = localStorage.getItem('token');
       if (statusUpdate.status === 'issued') {
-        await axios.post('/api/payments/policy', {
+        await api.post('/payments/policy', {
           leadId: selectedLead._id,
           insuranceType: statusUpdate.insuranceType || 'od',
           premium: parseFloat(statusUpdate.premium) || 10000,
           policyExpiryDate: statusUpdate.policyExpiryDate,
           paymentId: selectedLead._id 
-        }, {
-          headers: { Authorization: `Bearer ${token}` }
         });
       } else {
-        await axios.put(`/api/leads/${selectedLead._id}/status`, statusUpdate, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await api.put(`/leads/${selectedLead._id}/status`, statusUpdate);
       }
       fetchLeads();
       setShowWorkspace(false);
@@ -134,12 +148,9 @@ const LeadManagement = () => {
   const addNoteOnly = async () => {
     if (!newNote.trim()) return;
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`/api/leads/${selectedLead._id}/status`, { 
+      await api.put(`/leads/${selectedLead._id}/status`, { 
         status: selectedLead.status, 
         note: newNote 
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       fetchLeads();
       setNewNote('');
@@ -252,6 +263,15 @@ const LeadManagement = () => {
                 <UserPlus size={16} />
                 Assign Subordinates
               </button>
+              {(user?.role === 'admin' || user?.role === 'team_leader') && (
+                <button 
+                  onClick={handleBulkDelete}
+                  className="px-6 py-3 bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl font-black text-[10px] uppercase tracking-widest hover:scale-105 hover:bg-red-500 hover:text-white transition-all shadow-lg flex items-center gap-2"
+                >
+                  <Trash2 size={16} />
+                  Delete Assets
+                </button>
+              )}
               <button 
                 onClick={() => setSelectedLeads([])}
                 className="p-3 text-white/40 hover:text-white transition-colors"
@@ -267,7 +287,7 @@ const LeadManagement = () => {
           <h2 className="text-3xl font-black text-[var(--text-main)]">Lead Management</h2>
           <p className="text-xs font-bold text-[var(--text-muted)] uppercase tracking-widest">Active Risk Injections: <span className="text-primary">{leads.length}</span></p>
         </div>
-        <div className="flex flex-wrap items-center gap-6 relative z-10">
+        <div className="flex flex-wrap items-center gap-6 xl:justify-end relative z-10">
           <div className="relative group">
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] group-focus-within:text-primary transition-colors" size={18} />
             <input 
@@ -282,10 +302,10 @@ const LeadManagement = () => {
           <div className="h-10 w-px bg-gray-100 mx-2"></div>
           <button 
             onClick={() => window.open('/api/reports/export/leads', '_blank')}
-            className="flex items-center gap-3 px-6 py-3.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl font-bold text-[10px] uppercase tracking-widest text-[var(--text-muted)] hover:bg-[var(--bg-main)] hover:text-[var(--text-main)] transition-all shadow-sm"
+            className="flex items-center gap-3 px-6 py-4 bg-primary/10 text-primary border border-primary/20 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-sm"
           >
-            <Download size={16} />
-            Export
+            <Download size={18} />
+            Export CSV
           </button>
           {user?.role === 'admin' && (
             <button 
@@ -402,16 +422,26 @@ const LeadManagement = () => {
                         </div>
                       </td>
                       <td className="px-10 py-7 text-right">
-                        <button 
-                          onClick={() => {
-                            setSelectedLead(lead);
-                            setStatusUpdate({ status: lead.status, insuranceType: lead.insuranceType, note: '', premium: '' });
-                            setShowWorkspace(true);
-                          }}
-                          className="h-11 w-11 rounded-2xl hover:bg-white hover:shadow-xl border border-transparent hover:border-gray-50 transition-all flex items-center justify-center text-gray-400 hover:text-primary group-hover:scale-110"
-                        >
-                          <ChevronRight size={22} />
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          {(user?.role === 'admin' || user?.role === 'team_leader') && (
+                            <button 
+                              onClick={(e) => handleDeleteLead(lead._id, e)}
+                              className="h-11 w-11 rounded-2xl hover:bg-red-50 hover:shadow-xl border border-transparent hover:border-red-100 transition-all flex items-center justify-center text-gray-400 hover:text-red-500"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          )}
+                          <button 
+                            onClick={() => {
+                              setSelectedLead(lead);
+                              setStatusUpdate({ status: lead.status, insuranceType: lead.insuranceType, note: '', premium: '' });
+                              setShowWorkspace(true);
+                            }}
+                            className="h-11 w-11 rounded-2xl hover:bg-white hover:shadow-xl border border-transparent hover:border-gray-50 transition-all flex items-center justify-center text-gray-400 hover:text-primary group-hover:scale-110"
+                          >
+                            <ChevronRight size={22} />
+                          </button>
+                        </div>
                       </td>
                     </motion.tr>
                   );

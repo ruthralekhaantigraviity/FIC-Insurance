@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
-import axios from 'axios';
+import api from '../services/api';
 import { 
-  Users, PhoneCall, Heart, Send, 
-  CheckCircle, Shield, Briefcase,
-  Award, Calendar, MapPin,
-  Activity, PieChart as PieIcon, BarChart as BarIcon,
-  Download, CreditCard, Banknote, Laptop, FileText
+  Users, TrendingUp, CheckCircle, 
+  Clock, AlertCircle, PieChart as PieIcon, BarChart as BarIcon,
+  Calendar, MapPin, Activity, Download,
+  ArrowUpRight, ArrowDownRight, Briefcase, Zap,
+  Search, Shield, Bell, ChevronRight, X, UserCheck,
+  PhoneCall, Heart, Send, Banknote, CreditCard, Laptop, FileText, Award
 } from 'lucide-react';
-import { 
-  XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Cell, AreaChart, Area,
-  PieChart, Pie
-} from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
+  ResponsiveContainer, PieChart, Pie, Cell,
+  AreaChart, Area, LineChart, Line
+} from 'recharts';
 import { toast } from 'react-toastify';
 
 const StatCard = ({ label, value, icon: Icon, color, bgColor, delay }) => (
@@ -55,14 +56,15 @@ const Dashboard = () => {
   }, [user, selectedBranch]);
 
   const fetchBranches = async () => {
-    setBranches(['Thirupathur', 'Krishanagiri', 'Chennai', 'Bangalore']);
-  }
+    try {
+      const res = await api.get('/users/branches');
+      setBranches(res.data);
+    } catch (err) {}
+  };
 
   const fetchPerformanceData = async () => {
     try {
-      const res = await axios.get(`/api/reports/performance?branch=${selectedBranch}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
+      const res = await api.get(`/reports/performance?branch=${selectedBranch}`);
       setPerformanceData(res.data);
     } catch (err) {
       console.error('Failed to fetch team performance');
@@ -71,10 +73,7 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`/api/reports/dashboard?branch=${selectedBranch}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get(`/reports/dashboard?branch=${selectedBranch}`);
       const data = res.data;
       setStats(data);
       if (data.categoryStats) setPolicyData(data.categoryStats);
@@ -92,16 +91,13 @@ const Dashboard = () => {
     
     setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('/api/reports/daily', {
+      await api.post('/reports/daily', {
         summary: reportSummary,
         statsSnapshot: {
           calls: stats?.todayCallsDone || 0,
           interested: stats?.interestedLeads || 0,
           issued: (stats?.odCount || 0) + (stats?.thirdPartyCount || 0)
         }
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       toast.success('Daily Operation Log Injected Successfully');
       setReportSummary('');
@@ -158,8 +154,8 @@ const Dashboard = () => {
   return (
     <div className="space-y-6 sm:space-y-8 pb-12">
       {/* Welcome Header */}
-      <div className="flex flex-col gap-5 bg-[var(--bg-card)] p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-[var(--border-light)] shadow-sm">
-        <div>
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 bg-[var(--bg-card)] p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-[var(--border-light)] shadow-sm">
+        <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest">
               {isEmployee ? 'Performance Terminal' : 'Admin Dashboard'}
@@ -178,9 +174,10 @@ const Dashboard = () => {
               : "Complete overview of your team's performance and lead pipeline."}
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+
+        <div className="flex flex-wrap items-center gap-3 xl:justify-end">
           {user?.role === 'admin' && (
-            <div className="flex items-center gap-3 px-4 py-2 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 px-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl shadow-sm">
               <div className="flex items-center gap-2 border-r border-[var(--border-light)] pr-3 mr-1">
                 <MapPin size={14} className="text-primary" />
                 <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Branch</span>
@@ -200,15 +197,15 @@ const Dashboard = () => {
           {!isEmployee && (
             <button 
               onClick={() => window.open('/api/reports/export/leads', '_blank')}
-              className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl font-bold text-xs text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all shadow-sm"
+              className="flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-xl shadow-blue-900/20 hover:scale-105 transition-all"
             >
-              <Download size={15} />
-              Export
+              <Download size={18} />
+              Export CSV
             </button>
           )}
-          <div className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-light)]">
-            <Calendar size={16} className="text-primary" />
-            <span className="text-xs font-black text-[var(--text-main)] font-mono">
+          <div className="flex items-center gap-3 px-5 py-3 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-light)]">
+            <Calendar size={18} className="text-primary" />
+            <span className="text-sm font-black text-[var(--text-main)] font-mono">
               {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
             </span>
           </div>

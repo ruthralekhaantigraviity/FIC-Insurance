@@ -28,4 +28,20 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.warn('Session expired or unauthorized. Re-authenticating...');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Force reload to login if not already there
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+)
+
 export default api

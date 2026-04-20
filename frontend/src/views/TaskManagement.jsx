@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect, useContext } from 'react';
+import api from '../services/api';
+import { AuthContext } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 import { 
   CheckCircle2, Clock, AlertTriangle, 
   Plus, Calendar, User, Zap,
-  Timer, Shield, X
+  Timer, Shield, X, Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const TaskManagement = () => {
+  const { user } = useContext(AuthContext);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({ title: '', description: '', dueDate: '', priority: 'medium', assignedTo: '' });
   const [users, setUsers] = useState([]);
 
@@ -21,10 +25,7 @@ const TaskManagement = () => {
 
   const fetchTasks = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('/api/tasks', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('/tasks');
       setTasks(res.data);
     } catch (err) {
       console.error('Failed to fetch tasks');
@@ -35,25 +36,45 @@ const TaskManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('/api/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get('/users/team');
       setUsers(res.data);
     } catch (err) {}
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('/api/tasks', formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.post('/tasks', formData);
       setShowModal(false);
       fetchTasks();
+      setFormData({ title: '', description: '', dueDate: '', priority: 'medium', assignedTo: '' });
+      toast.success('Task successfully assigned');
     } catch (err) {
-      alert('Failed to assign task');
+      toast.error(err.response?.data?.message || 'Failed to assign task');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateStatus = async (taskId, newStatus) => {
+    try {
+      await api.put(`/tasks/${taskId}`, { status: newStatus });
+      fetchTasks();
+      toast.success(`Task status updated to ${newStatus.replace('_', ' ')}`);
+    } catch (err) {
+      toast.error('Failed to update status');
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm('Are you sure you want to delete this task?')) return;
+    try {
+      await api.delete(`/tasks/${taskId}`);
+      fetchTasks();
+      toast.success('Task deleted');
+    } catch (err) {
+      toast.error('Failed to delete task');
     }
   };
 
@@ -77,13 +98,15 @@ const TaskManagement = () => {
           <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-main)]">Task Management</h2>
           <p className="text-[var(--text-muted)] font-medium mt-1 text-sm">Assign and track operational tasks across your team.</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="btn-primary group w-fit"
-        >
-          <Plus size={18} className="group-hover:rotate-90 transition-transform duration-200" />
-          <span>New Task</span>
-        </button>
+        {(user?.role === 'admin' || user?.role === 'team_leader') && (
+          <button
+            onClick={() => setShowModal(true)}
+            className="btn-primary group w-fit"
+          >
+            <Plus size={18} className="group-hover:rotate-90 transition-transform duration-200" />
+            <span>New Task</span>
+          </button>
+        )}
       </div>
 
       {/* Task Grid */}
@@ -146,6 +169,38 @@ const TaskManagement = () => {
                     <StatusIcon size={14} />
                     <span>{status.label}</span>
                   </div>
+                </div>
+
+                {/* Role-based Actions */}
+                <div className="mt-4 flex items-center justify-end gap-2">
+                  {user?._id === task.assignedTo?._id && task.status !== 'completed' && (
+                    <div className="flex gap-2">
+                      {task.status === 'pending' && (
+                        <button 
+                          onClick={() => handleUpdateStatus(task._id, 'in_progress')}
+                          className="px-3 py-1.5 bg-amber-100 text-amber-600 rounded-lg text-[9px] font-bold uppercase tracking-widest hover:bg-amber-200 transition-colors"
+                        >
+                          Start Work
+                        </button>
+                      )}
+                      {task.status === 'in_progress' && (
+                        <button 
+                          onClick={() => handleUpdateStatus(task._id, 'completed')}
+                          className="px-3 py-1.5 bg-green-100 text-green-600 rounded-lg text-[9px] font-bold uppercase tracking-widest hover:bg-green-200 transition-colors"
+                        >
+                          Mark Done
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {(user?.role === 'admin' || user?._id === task.createdBy?._id) && (
+                    <button 
+                      onClick={() => handleDeleteTask(task._id)}
+                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               </motion.div>
             );

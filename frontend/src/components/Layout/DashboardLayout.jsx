@@ -126,7 +126,7 @@ const DashboardLayout = ({ children }) => {
   ];
 
   if (user?.role === 'admin') {
-    navItems.push({ to: '/employees', icon: Users, label: 'Staff' });
+    navItems.push({ to: '/employees', icon: Users, label: 'Staff Management' });
     navItems.push({ to: '/payments', icon: CreditCard, label: 'Payments' });
     navItems.push({ to: '/policies', icon: ShieldCheck, label: 'Policies' });
     navItems.push({ to: '/performance-reports', icon: PieChart, label: 'Reports' });

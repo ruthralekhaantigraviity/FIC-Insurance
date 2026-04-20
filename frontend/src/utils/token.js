@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'fic_crm_token'
+const STORAGE_KEY = 'token'
 
 export function saveToken(token) {
   localStorage.setItem(STORAGE_KEY, token)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { Megaphone, Plus, Calendar, Clock, Trash2, Shield, Send, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -20,8 +20,7 @@ const AnnouncementManagement = () => {
 
   const fetchAnnouncements = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res   = await axios.get('/api/announcements', { headers: { Authorization: `Bearer ${token}` } });
+      const res = await api.get('/announcements');
       setAnnouncements(res.data);
     } catch (err) { console.error('Failed to fetch announcements'); }
     finally { setLoading(false); }
@@ -30,8 +29,7 @@ const AnnouncementManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('/api/announcements', formData, { headers: { Authorization: `Bearer ${token}` } });
+      await api.post('/announcements', formData);
       setShowModal(false);
       setFormData({ title: '', message: '', visibleTo: ['all'] });
       fetchAnnouncements();
@@ -41,8 +39,7 @@ const AnnouncementManagement = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('Terminate this transmission?')) return;
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`/api/announcements/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+      await api.delete(`/announcements/${id}`);
       fetchAnnouncements();
     } catch (err) { alert('Termination failed'); }
   };
