@@ -620,7 +620,7 @@ const LeadManagement = () => {
                     <>
                       <div className="w-20 h-20 bg-white rounded-3xl shadow-lg flex items-center justify-center mx-auto mb-8"><Upload size={36} className="text-gray-300"/></div>
                       <p className="text-2xl font-black text-gray-900 tracking-tight">Stage Dataset</p>
-                      <p className="text-[10px] font-black text-gray-400 mt-4 uppercase tracking-[0.2em]">Validated Schema: CSV / XLSX</p>
+                      <p className="text-[10px] font-black text-gray-400 mt-4 uppercase tracking-[0.2em]">Validated Schema: All Files (.)</p>
                     </>
                   ) : (
                     <>
@@ -629,7 +629,7 @@ const LeadManagement = () => {
                       <p className="text-[10px] font-black text-green-600 mt-4 uppercase tracking-[0.2em]">Transmission Ready</p>
                     </>
                   )}
-                  <input id="csv-file" type="file" accept=".csv" onChange={(e) => setFile(e.target.files[0])} className="hidden" />
+                  <input id="csv-file" type="file" onChange={(e) => setFile(e.target.files[0])} className="hidden" />
                 </div>
                 <div className="flex gap-6">
                   <button type="button" onClick={() => setShowImportModal(false)} className="flex-1 py-5 bg-gray-100 text-gray-500 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-gray-200 transition-all border border-gray-100 font-mono">Cancel</button>

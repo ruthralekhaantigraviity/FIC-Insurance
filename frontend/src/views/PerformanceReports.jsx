@@ -44,18 +44,18 @@ const PerformanceReports = () => {
   }));
 
   return (
-    <div className="space-y-10 pb-12">
+    <div className="space-y-6 sm:space-y-10 pb-12">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-[var(--bg-card)] p-8 rounded-[2rem] border border-[var(--border-light)] shadow-sm">
+      <div className="flex flex-col gap-4 bg-[var(--bg-card)] p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-[var(--border-light)] shadow-sm">
         <div>
-          <h2 className="text-3xl font-black text-[var(--text-main)]">Efficiency Terminal</h2>
-          <p className="text-[var(--text-muted)] font-medium mt-1">
+          <h2 className="text-2xl sm:text-3xl font-black text-[var(--text-main)]">Efficiency Terminal</h2>
+          <p className="text-[var(--text-muted)] font-medium mt-1 text-sm">
             Deep-dive operational metrics, revenue yield, and individual performance benchmarks.
           </p>
         </div>
-        <div className="flex gap-4">
-          <button className="flex items-center gap-3 px-6 py-3.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl font-bold text-xs text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all shadow-sm">
-            <Download size={16} />
+        <div className="flex gap-3">
+          <button className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl font-bold text-xs text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all shadow-sm">
+            <Download size={15} />
             Export Audit
           </button>
         </div>
@@ -130,9 +130,9 @@ const PerformanceReports = () => {
 
       {/* Leaderboard Table */}
       <div className="card !p-0 border-none shadow-sm overflow-hidden">
-        <div className="p-8 border-b border-[var(--border-light)] flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center bg-[var(--bg-main)] border border-[var(--border-light)] rounded-2xl px-5 py-3 w-full md:w-96 group focus-within:border-primary transition-all">
-            <Search size={18} className="text-[var(--text-muted)] group-focus-within:text-primary" />
+        <div className="p-5 sm:p-8 border-b border-[var(--border-light)]">
+          <div className="flex items-center bg-[var(--bg-main)] border border-[var(--border-light)] rounded-2xl px-4 sm:px-5 py-3 w-full sm:w-96 group focus-within:border-primary transition-all">
+            <Search size={18} className="text-[var(--text-muted)] group-focus-within:text-primary flex-shrink-0" />
             <input 
               type="text" 
               placeholder="Search employee or team..." 
@@ -144,63 +144,63 @@ const PerformanceReports = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left min-w-[640px]">
             <thead className="bg-[var(--bg-main)] text-[10px] font-black text-[var(--text-muted)] uppercase tracking-[0.2em] border-b border-[var(--border-light)]">
               <tr>
-                <th className="px-8 py-6">Rank</th>
-                <th className="px-8 py-6">Operational Profile</th>
-                <th className="px-8 py-6 text-center">Conversions</th>
-                <th className="px-8 py-6">Yield (Premium)</th>
-                <th className="px-8 py-6">Incentives Earned</th>
-                <th className="px-8 py-6 text-right">Metrics</th>
+                <th className="px-5 sm:px-8 py-5">Rank</th>
+                <th className="px-5 sm:px-8 py-5">Profile</th>
+                <th className="px-5 sm:px-8 py-5 text-center">Conv.</th>
+                <th className="px-5 sm:px-8 py-5">Premium</th>
+                <th className="px-5 sm:px-8 py-5">Incentives</th>
+                <th className="px-5 sm:px-8 py-5 text-right">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-light)]">
               {loading ? (
                  [1,2,3,4,5].map(i => (
-                  <tr key={i} className="animate-pulse h-24 bg-[var(--bg-main)]/30">
-                    <td colSpan="6" className="px-8"></td>
+                  <tr key={i} className="animate-pulse h-20 bg-[var(--bg-main)]/30">
+                    <td colSpan="6" className="px-5"></td>
                   </tr>
                 ))
               ) : filteredReports.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-8 py-24 text-center text-[var(--text-muted)] font-black uppercase tracking-widest opacity-30">
+                  <td colSpan="6" className="px-5 py-16 text-center text-[var(--text-muted)] font-black uppercase tracking-widest opacity-30">
                      No Data Streams Detected
                   </td>
                 </tr>
               ) : filteredReports.map((report, i) => (
                 <tr key={report._id} className="hover:bg-primary/5 transition-all group">
-                  <td className="px-8 py-6">
-                    <span className={`text-lg font-black ${i === 0 ? 'text-amber-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-gray-300'}`}>
+                  <td className="px-5 sm:px-8 py-4 sm:py-6">
+                    <span className={`text-base sm:text-lg font-black ${i === 0 ? 'text-amber-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-gray-300'}`}>
                       {i + 1 < 10 ? `0${i + 1}` : i + 1}
                     </span>
                   </td>
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-light)] flex items-center justify-center font-black text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-all">
+                  <td className="px-5 sm:px-8 py-4 sm:py-6">
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-xl bg-[var(--bg-main)] border border-[var(--border-light)] flex items-center justify-center font-black text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-all flex-shrink-0">
                         {report.name?.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-black text-[var(--text-main)] text-sm tracking-tight">{report.name}</p>
-                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">{report.branch} / {report.team}</p>
+                        <p className="font-black text-[var(--text-main)] text-sm tracking-tight whitespace-nowrap">{report.name}</p>
+                        <p className="text-[10px] font-bold text-[var(--text-muted)] uppercase">{report.branch}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-8 py-6 text-center">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-green-100">
-                      {report.conversions} Policies
-                    </div>
+                  <td className="px-5 sm:px-8 py-4 sm:py-6 text-center">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-50 text-green-600 rounded-lg text-[10px] font-black uppercase tracking-widest border border-green-100 whitespace-nowrap">
+                      {report.conversions}
+                    </span>
                   </td>
-                  <td className="px-8 py-6 font-black text-[var(--text-main)] tabular-nums tracking-tighter text-lg">
+                  <td className="px-5 sm:px-8 py-4 sm:py-6 font-black text-[var(--text-main)] tabular-nums tracking-tighter whitespace-nowrap">
                     ₹{report.premium.toLocaleString()}
                   </td>
-                  <td className="px-8 py-6 font-black text-primary tabular-nums tracking-tighter text-lg">
+                  <td className="px-5 sm:px-8 py-4 sm:py-6 font-black text-primary tabular-nums tracking-tighter whitespace-nowrap">
                     ₹{report.incentives.toLocaleString()}
                   </td>
-                  <td className="px-8 py-6 text-right">
-                    <div className="flex items-center justify-end gap-2 text-[var(--text-muted)] font-black text-[10px] uppercase tracking-widest">
-                       <Activity size={14} className="text-green-500" />
-                       Active Alpha
+                  <td className="px-5 sm:px-8 py-4 sm:py-6 text-right">
+                    <div className="flex items-center justify-end gap-1 text-[var(--text-muted)] font-black text-[10px] uppercase tracking-widest">
+                       <Activity size={12} className="text-green-500" />
+                       <span className="hidden sm:inline">Active</span>
                     </div>
                   </td>
                 </tr>

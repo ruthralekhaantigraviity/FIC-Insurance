@@ -156,11 +156,11 @@ const Dashboard = () => {
   const isEmployee = user?.role === 'employee';
 
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 sm:space-y-8 pb-12">
       {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between bg-[var(--bg-card)] p-8 rounded-[2rem] border border-[var(--border-light)] shadow-sm">
+      <div className="flex flex-col gap-5 bg-[var(--bg-card)] p-5 sm:p-8 rounded-[1.5rem] sm:rounded-[2rem] border border-[var(--border-light)] shadow-sm">
         <div>
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
             <span className="bg-primary/10 text-primary px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest">
               {isEmployee ? 'Performance Terminal' : 'Admin Dashboard'}
             </span>
@@ -169,16 +169,16 @@ const Dashboard = () => {
               Live Stream
             </div>
           </div>
-          <h2 className="text-4xl font-black text-[var(--text-main)] mb-2 italic">
+          <h2 className="text-2xl sm:text-4xl font-black text-[var(--text-main)] mb-2 italic">
             {isEmployee ? 'Fueling Growth,' : 'Good Day,'} {user?.name?.split(' ')[0] || 'User'} 🚀
           </h2>
-          <p className="text-[var(--text-muted)] font-medium max-w-xl">
+          <p className="text-[var(--text-muted)] font-medium text-sm sm:text-base max-w-xl">
             {isEmployee 
-              ? 'Your conversion metrics and daily objectives are synchronized. Focus on the high-intent pipeline.' 
-              : "Here's a complete overview of your team's performance and lead pipeline today."}
+              ? 'Your conversion metrics and daily objectives are synchronized.' 
+              : "Complete overview of your team's performance and lead pipeline."}
           </p>
         </div>
-        <div className="mt-6 md:mt-0 flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           {user?.role === 'admin' && (
             <div className="flex items-center gap-3 px-4 py-2 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl shadow-sm">
               <div className="flex items-center gap-2 border-r border-[var(--border-light)] pr-3 mr-1">
@@ -188,7 +188,7 @@ const Dashboard = () => {
               <select 
                 value={selectedBranch}
                 onChange={(e) => setSelectedBranch(e.target.value)}
-                className="bg-transparent text-[var(--text-main)] font-bold text-xs outline-none cursor-pointer hover:text-primary transition-colors min-w-[120px]"
+                className="bg-transparent text-[var(--text-main)] font-bold text-xs outline-none cursor-pointer hover:text-primary transition-colors min-w-[100px]"
               >
                 <option value="All">All Branches</option>
                 {branches.map(b => (
@@ -200,15 +200,15 @@ const Dashboard = () => {
           {!isEmployee && (
             <button 
               onClick={() => window.open('/api/reports/export/leads', '_blank')}
-              className="flex items-center gap-3 px-6 py-3.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl font-bold text-xs text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all shadow-sm"
+              className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl font-bold text-xs text-[var(--text-main)] hover:bg-[var(--bg-main)] transition-all shadow-sm"
             >
-              <Download size={16} />
-              Export Audit
+              <Download size={15} />
+              Export
             </button>
           )}
-          <div className="flex items-center gap-3 px-5 py-3.5 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-light)]">
-            <Calendar size={18} className="text-primary" />
-            <span className="text-sm font-black text-[var(--text-main)] font-mono">
+          <div className="flex items-center gap-2 px-4 py-2.5 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-light)]">
+            <Calendar size={16} className="text-primary" />
+            <span className="text-xs font-black text-[var(--text-main)] font-mono">
               {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
             </span>
           </div>
@@ -217,18 +217,18 @@ const Dashboard = () => {
 
       {/* Navigation Tabs (For Admin/TL) */}
       {!isEmployee && (
-        <div className="flex items-center gap-4 bg-[var(--bg-card)] p-2 rounded-2xl border border-[var(--border-light)] w-fit">
+        <div className="flex items-center gap-2 sm:gap-4 bg-[var(--bg-card)] p-2 rounded-2xl border border-[var(--border-light)] w-fit">
           <button 
             onClick={() => setActiveTab('kpis')}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'kpis' ? 'bg-gray-900 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+            className={`px-4 sm:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'kpis' ? 'bg-gray-900 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
           >
             KPI Terminal
           </button>
           <button 
             onClick={() => setActiveTab('team')}
-            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'team' ? 'bg-gray-900 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
+            className={`px-4 sm:px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'team' ? 'bg-gray-900 text-white shadow-lg' : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'}`}
           >
-            Management Matrix
+            Team Matrix
           </button>
         </div>
       )}
@@ -244,21 +244,21 @@ const Dashboard = () => {
           >
             {/* KPI Cards Row */}
             {isEmployee ? (
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-5">
                 {employeeStats.map((stat, i) => <StatCard key={i} {...stat} />)}
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-5">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-5">
                   {adminStats.slice(0, 5).map((stat, i) => <StatCard key={i} {...stat} />)}
                 </div>
-                <div className="grid grid-cols-2 xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
                   {adminStats.slice(5).map((stat, i) => <StatCard key={i} {...stat} />)}
                 </div>
               </>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-8">
               {/* Charts area remains same */}
               {/* Charts / Reporting */}
               <div className="lg:col-span-2 space-y-8">
@@ -431,44 +431,44 @@ const Dashboard = () => {
             className="space-y-8"
           >
             <div className="card !p-0 overflow-hidden border-none shadow-xl">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-100">
-                    <th className="px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Growth Agent</th>
-                    <th className="px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Branch / Team</th>
-                    <th className="px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Conversions</th>
-                    <th className="px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Volume (INR)</th>
-                    <th className="px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Incentive Yield</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50 bg-white">
-                  {performanceData.map((agent, i) => (
-                    <tr key={i} className="hover:bg-blue-50/30 transition-all group">
-                      <td className="px-10 py-6">
-                        <div className="flex items-center gap-4">
-                          <div className="h-10 w-10 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-gray-400 group-hover:bg-primary group-hover:text-white transition-all">
-                            {agent.name?.charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-bold text-gray-900 mb-0.5">{agent.name}</p>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{agent.role}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-10 py-6">
-                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest bg-gray-100 px-3 py-1 rounded-full">{agent.branch} • {agent.team || 'None'}</span>
-                      </td>
-                      <td className="px-10 py-6 font-bold text-gray-900">{agent.conversions || 0}</td>
-                      <td className="px-10 py-6 font-bold text-gray-900">₹{(agent.premium || 0).toLocaleString()}</td>
-                      <td className="px-10 py-6">
-                        <div className="flex items-center gap-2">
-                          <span className="font-black text-primary italic">₹{(agent.incentives || 0).toLocaleString()}</span>
-                        </div>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left min-w-[600px]">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-100">
+                      <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Agent</th>
+                      <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Branch</th>
+                      <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Conv.</th>
+                      <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Volume</th>
+                      <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Incentive</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50 bg-white">
+                    {performanceData.map((agent, i) => (
+                      <tr key={i} className="hover:bg-blue-50/30 transition-all group">
+                        <td className="px-6 sm:px-10 py-4 sm:py-6">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-gray-400 group-hover:bg-primary group-hover:text-white transition-all flex-shrink-0">
+                              {agent.name?.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-bold text-gray-900 text-sm mb-0.5">{agent.name}</p>
+                              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{agent.role}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 sm:px-10 py-4 sm:py-6">
+                          <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">{agent.branch}</span>
+                        </td>
+                        <td className="px-6 sm:px-10 py-4 sm:py-6 font-bold text-gray-900">{agent.conversions || 0}</td>
+                        <td className="px-6 sm:px-10 py-4 sm:py-6 font-bold text-gray-900 whitespace-nowrap">₹{(agent.premium || 0).toLocaleString()}</td>
+                        <td className="px-6 sm:px-10 py-4 sm:py-6">
+                          <span className="font-black text-primary italic whitespace-nowrap">₹{(agent.incentives || 0).toLocaleString()}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </motion.div>
         )}
