@@ -32,6 +32,16 @@ app.use('/api/payments', paymentRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/seed', seedRoutes)
 
+// Fallback routes for when /api is stripped by proxy/rewrites
+app.use('/auth', authRoutes)
+app.use('/users', userRoutes)
+app.use('/leads', leadRoutes)
+app.use('/tasks', taskRoutes)
+app.use('/announcements', announcementRoutes)
+app.use('/payments', paymentRoutes)
+app.use('/reports', reportRoutes)
+app.use('/seed', seedRoutes)
+
 app.get('/', (req, res) => {
   res.send('FIC Insurance CRM API is running...')
 })
