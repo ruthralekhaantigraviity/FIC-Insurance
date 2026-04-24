@@ -158,11 +158,6 @@ const Dashboard = () => {
     { label: 'Third Party Insurance', value: tpCount,                         icon: Briefcase,   bgColor: 'bg-orange-100',  color: 'text-orange-600',  delay: 0.35 },
     { label: 'Total Incentives',      value: `₹${(stats?.totalIncentives || 0).toLocaleString()}`, icon: Banknote,    bgColor: 'bg-emerald-100', color: 'text-emerald-600', delay: 0.40 },
     { label: 'Premium Volume',        value: `₹${(stats?.totalPremium   || 0).toLocaleString()}`, icon: CreditCard,  bgColor: 'bg-indigo-100',  color: 'text-indigo-600',  delay: 0.45 },
-    { label: 'Total Calls',           value: callStats?.summary?.totalCalls || 0, icon: PhoneCall, bgColor: 'bg-blue-100', color: 'text-blue-600', delay: 0.50 },
-    { label: 'Interested',            value: callStats?.summary?.interested || 0, icon: Heart, bgColor: 'bg-pink-100', color: 'text-pink-600', delay: 0.55 },
-    { label: 'Not Interested',        value: callStats?.summary?.notInterested || 0, icon: X, bgColor: 'bg-red-100', color: 'text-red-600', delay: 0.60 },
-    { label: 'Paid Calls',            value: callStats?.summary?.paidCalls || 0, icon: CreditCard, bgColor: 'bg-green-100', color: 'text-green-600', delay: 0.65 },
-    { label: 'Non-Paid Calls',        value: callStats?.summary?.nonPaidCalls || 0, icon: AlertCircle, bgColor: 'bg-gray-100', color: 'text-gray-600', delay: 0.70 },
   ];
 
   const employeeStats = [
