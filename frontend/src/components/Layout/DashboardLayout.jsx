@@ -119,7 +119,7 @@ const DashboardLayout = ({ children }) => {
 
   const navItems = [
     { to: '/', icon: Layout, label: 'Dashboard' },
-    { to: '/leads', icon: Users, label: 'Leads' },
+    { to: '/leads', icon: Users, label: user?.role === 'employee' ? 'Activity' : 'Leads' },
     { to: '/tasks', icon: FileText, label: 'Tasks' },
     { to: '/incentives', icon: Zap, label: 'Incentives' },
     { to: '/announcements', icon: Bell, label: 'Updates' },

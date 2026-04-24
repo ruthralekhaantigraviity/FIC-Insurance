@@ -18,9 +18,14 @@ const dailyReportSchema = new mongoose.Schema({
     type: String
   },
   statsSnapshot: {
-    calls: Number,
-    interested: Number,
-    issued: Number
+    totalCalls: { type: Number, default: 0 },
+    interested: { type: Number, default: 0 },
+    notInterested: { type: Number, default: 0 },
+    paid: { type: Number, default: 0 },
+    nonPaid: { type: Number, default: 0 },
+    completed: { type: Number, default: 0 },
+    notPicking: { type: Number, default: 0 },
+    issued: { type: Number, default: 0 }
   }
 }, { timestamps: true });
 

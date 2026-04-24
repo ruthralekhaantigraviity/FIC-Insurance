@@ -5,6 +5,7 @@ import Task from '../models/Task.js'
 import Payment from '../models/Payment.js'
 import Incentive from '../models/Incentive.js'
 import User from '../models/User.js'
+import Call from '../models/Call.js'
 import DailyReport from '../models/DailyReport.js'
 import { authGuard } from '../middleware/auth.js'
 import { allowRoles } from '../middleware/roles.js'
@@ -13,16 +14,24 @@ const router = express.Router()
 router.use(authGuard)
 
 router.get('/dashboard', async (req, res) => {
-  const { branch } = req.query;
+  const { branch, date } = req.query;
+  const todayStart = date ? new Date(date) : new Date();
+  todayStart.setHours(0,0,0,0);
+  const todayEnd = date ? new Date(date) : new Date();
+  todayEnd.setHours(23,59,59,999);
   let query = {}
   let userQuery = {}
   
   if (req.user.role === 'employee') {
     query = { assignedTo: req.user._id }
     userQuery = { _id: req.user._id }
-  } else if (req.user.role === 'team_leader' || (req.user.role === 'admin' && branch && branch !== 'All')) {
-    const targetBranch = (req.user.role === 'admin' && branch) ? branch : req.user.branch;
-    const branchUsers = await User.find({ branch: targetBranch }).select('_id')
+  } else if (req.user.role === 'team_leader') {
+    query = { assignedTo: { $in: await User.find({ teamLeader: req.user._id }).distinct('_id') } }
+    userQuery = { _id: { $in: await User.find({ teamLeader: req.user._id }).distinct('_id') } }
+  } else if (req.user.role === 'admin') {
+    let adminUserQuery = {};
+    if (branch && branch !== 'All') adminUserQuery.branch = branch;
+    const branchUsers = await User.find(adminUserQuery).select('_id')
     const userIds = branchUsers.map(u => u._id)
     query = { assignedTo: { $in: userIds } }
     userQuery = { _id: { $in: userIds } }
@@ -84,11 +93,7 @@ router.get('/dashboard', async (req, res) => {
     { $group: { _id: null, total: { $sum: '$amount' } } }
   ])
 
-  // Daily Top performers aggregation (Today only)
-  const todayStart = new Date();
-  todayStart.setHours(0,0,0,0);
-  const todayEnd = new Date();
-  todayEnd.setHours(23,59,59,999);
+  // Daily Top performers aggregation (Selected date)
 
   const leaderboardMatch = {
       ...(req.user.role === 'admin' ? {} : (req.user.role === 'team_leader' ? { user: { $in: Array.isArray(userQuery._id.$in) ? userQuery._id.$in : [] } } : { user: req.user._id })),
@@ -105,11 +110,17 @@ router.get('/dashboard', async (req, res) => {
   const topPerformers = await User.find({ _id: { $in: leaderboard.map((item) => item._id) } }).select('name email role')
   const leaderboardMap = leaderboard.reduce((acc, item) => ({ ...acc, [item._id.toString()]: item }), {})
 
+  const manualStats = await DailyReport.aggregate([
+    { $match: { user: { $in: userQuery._id.$in || [req.user._id] }, createdAt: { $gte: todayStart, $lte: todayEnd } } },
+    { $group: { _id: null, totalCalls: { $sum: '$statsSnapshot.totalCalls' }, interested: { $sum: '$statsSnapshot.interested' } } }
+  ])
+  const m = manualStats[0] || { totalCalls: 0, interested: 0 }
+
   res.json({
     totalLeads,
-    todayCallsDone: await Lead.countDocuments({ ...query, status: 'called', updatedAt: { $gte: todayStart, $lte: todayEnd } }),
+    todayCallsDone: (await Lead.countDocuments({ ...query, status: 'called', updatedAt: { $gte: todayStart, $lte: todayEnd } })) + m.totalCalls,
     calledLeads,
-    interestedLeads,
+    interestedLeads: (await Lead.countDocuments({ ...query, status: 'interested' })) + m.interested,
     paymentLinksSent,
     paymentsCompleted: await Payment.countDocuments(paymentQuery),
     categoryStats,
@@ -212,9 +223,14 @@ router.get('/activity', allowRoles('admin', 'team_leader'), async (req, res) => 
 })
 
 router.get('/performance', allowRoles('admin', 'team_leader'), async (req, res) => {
+  const { branch, date } = req.query;
+  const todayStart = date ? new Date(date) : new Date();
+  todayStart.setHours(0,0,0,0);
+  const todayEnd = date ? new Date(date) : new Date();
+  todayEnd.setHours(23,59,59,999);
   let query = { role: { $ne: 'admin' } }
   if (req.user.role === 'team_leader') {
-    query.branch = req.user.branch
+    query.teamLeader = req.user._id
   }
   const users = await User.find(query).select('name email role branch team')
   
@@ -229,6 +245,23 @@ router.get('/performance', allowRoles('admin', 'team_leader'), async (req, res) 
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ])
 
+    const callStats = await Call.aggregate([
+      { $match: { employee: user._id } },
+      { $group: { _id: null, total: { $sum: 1 }, interested: { $sum: { $cond: [{ $eq: ['$status', 'interested'] }, 1, 0] } } } }
+    ])
+
+    const todayStart = new Date();
+    todayStart.setHours(0,0,0,0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23,59,59,999);
+
+    const manualStats = await DailyReport.aggregate([
+      { $match: { user: user._id, createdAt: { $gte: todayStart, $lte: todayEnd } } },
+      { $group: { _id: null, total: { $sum: '$statsSnapshot.totalCalls' }, interested: { $sum: '$statsSnapshot.interested' } } }
+    ])
+
+    const m = manualStats[0] || { total: 0, interested: 0 }
+
     return {
       _id: user._id,
       name: user.name,
@@ -238,7 +271,9 @@ router.get('/performance', allowRoles('admin', 'team_leader'), async (req, res) 
       team: user.team,
       conversions,
       premium: totalPremium[0]?.total || 0,
-      incentives: totalIncentives[0]?.total || 0
+      incentives: totalIncentives[0]?.total || 0,
+      calls: (callStats[0]?.total || 0) + m.total,
+      interested: (callStats[0]?.interested || 0) + m.interested
     }
   }))
 

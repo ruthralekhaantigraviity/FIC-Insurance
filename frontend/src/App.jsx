@@ -7,6 +7,7 @@ import DashboardLayout from './components/Layout/DashboardLayout';
 import Login from './views/Login';
 import Dashboard from './views/Dashboard';
 import LeadManagement from './views/LeadManagement';
+import ActivityReporting from './views/ActivityReporting';
 import EmployeeManagement from './views/EmployeeManagement';
 import AnnouncementManagement from './views/AnnouncementManagement';
 import TaskManagement from './views/TaskManagement';
@@ -29,6 +30,11 @@ const ProtectedRoute = ({ children }) => {
   return <DashboardLayout>{children}</DashboardLayout>;
 };
 
+const LeadsPage = () => {
+  const { user } = useContext(AuthContext);
+  return user?.role === 'employee' ? <ActivityReporting /> : <LeadManagement />;
+};
+
 function App() {
   return (
     <Router>
@@ -47,7 +53,7 @@ function App() {
             path="/leads" 
             element={
               <ProtectedRoute>
-                <LeadManagement />
+                <LeadsPage />
               </ProtectedRoute>
             } 
           />

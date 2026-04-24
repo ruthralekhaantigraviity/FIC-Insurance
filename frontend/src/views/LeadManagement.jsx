@@ -26,6 +26,8 @@ const LeadManagement = () => {
   const [newNote, setNewNote] = useState('');
   const [showImportModal, setShowImportModal] = useState(false);
   const [file, setFile] = useState(null);
+  const [showCallLogModal, setShowCallLogModal] = useState(false);
+  const [callLogData, setCallLogData] = useState({ status: 'interested', isPaid: false, notes: '' });
 
   useEffect(() => {
     console.log('LeadManagement Terminal Initialized');
@@ -101,10 +103,25 @@ const LeadManagement = () => {
   };
 
   const handleCallInitiated = (lead) => {
-    console.log(`Dialing ${lead.phone}...`);
+    setSelectedLead(lead);
+    setShowCallLogModal(true);
     if (lead.status === 'new') {
       api.put(`/leads/${lead._id}/status`, { status: 'called', note: 'Call initiated via terminal dialer' })
          .then(() => fetchLeads());
+    }
+  };
+
+  const submitCallLog = async () => {
+    try {
+      await api.post('/calls', {
+        ...callLogData,
+        leadId: selectedLead?._id
+      });
+      toast.success('Call transmission recorded');
+      setShowCallLogModal(false);
+      setCallLogData({ status: 'interested', isPaid: false, notes: '' });
+    } catch (err) {
+      toast.error('Failed to log call stats');
     }
   };
 
@@ -749,6 +766,76 @@ const LeadManagement = () => {
                 >
                   Terminate Request
                 </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showCallLogModal && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden"
+            >
+              <div className="bg-primary p-8 text-white flex items-center justify-between">
+                <div>
+                  <h3 className="text-2xl font-black italic">Record Call Interaction</h3>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-blue-100 opacity-60">Logging telemetry for {selectedLead?.name}</p>
+                </div>
+                <button onClick={() => setShowCallLogModal(false)} className="p-2 bg-white/10 rounded-xl hover:bg-white/20"><X size={18}/></button>
+              </div>
+              <div className="p-8 space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Customer Sentiment</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { id: 'interested', label: 'Interested', icon: Heart },
+                      { id: 'not_interested', label: 'Not Interested', icon: X },
+                      { id: 'unreachable', label: 'Unreachable', icon: Clock }
+                    ].map(s => (
+                      <button
+                        key={s.id}
+                        onClick={() => setCallLogData({...callLogData, status: s.id})}
+                        className={`p-4 rounded-2xl flex items-center gap-3 border transition-all ${callLogData.status === s.id ? 'bg-gray-900 text-white border-transparent' : 'bg-white text-gray-400 border-gray-100'}`}
+                      >
+                        <s.icon size={14} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">{s.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div>
+                    <p className="text-xs font-black text-gray-900">Payment Secured?</p>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Did the customer commit to payment?</p>
+                  </div>
+                  <button 
+                    onClick={() => setCallLogData({...callLogData, isPaid: !callLogData.isPaid})}
+                    className={`w-14 h-8 rounded-full relative transition-all ${callLogData.isPaid ? 'bg-green-500' : 'bg-gray-200'}`}
+                  >
+                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all ${callLogData.isPaid ? 'right-1' : 'left-1'}`}></div>
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Interaction Notes</label>
+                  <textarea 
+                    placeholder="Briefly describe the outcome..."
+                    value={callLogData.notes}
+                    onChange={(e) => setCallLogData({...callLogData, notes: e.target.value})}
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-primary/10 transition-all font-medium text-sm"
+                    rows="3"
+                  />
+                </div>
+
+                <div className="flex gap-4">
+                  <button onClick={() => setShowCallLogModal(false)} className="flex-1 py-4 bg-gray-100 text-gray-500 rounded-xl font-black text-[10px] uppercase tracking-widest">Discard</button>
+                  <button onClick={submitCallLog} className="flex-[2] py-4 bg-primary text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-900/20">Inject Log</button>
+                </div>
               </div>
             </motion.div>
           </div>

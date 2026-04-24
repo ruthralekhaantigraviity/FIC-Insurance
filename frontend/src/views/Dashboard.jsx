@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { 
   Users, TrendingUp, CheckCircle, 
@@ -48,12 +49,36 @@ const Dashboard = () => {
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState('All');
   const [reportSummary, setReportSummary] = useState('');
+  const [callStats, setCallStats] = useState(null);
+  const [teamLeaders, setTeamLeaders] = useState([]);
+  const [selectedTL, setSelectedTL] = useState('');
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
     fetchDashboardData();
-    if (user?.role !== 'employee') fetchPerformanceData();
+    fetchCallStats();
+    if (user?.role !== 'employee') {
+      fetchPerformanceData();
+      fetchTeamLeaders();
+    }
     if (user?.role === 'admin') fetchBranches();
-  }, [user, selectedBranch]);
+  }, [user, selectedBranch, selectedTL, selectedDate]);
+
+  const fetchTeamLeaders = async () => {
+    try {
+      const res = await api.get('/users/team-leaders');
+      setTeamLeaders(res.data);
+    } catch (err) {}
+  };
+
+  const fetchCallStats = async () => {
+    try {
+      const res = await api.get(`/calls/stats?branch=${selectedBranch}&teamLeader=${selectedTL}&date=${selectedDate}`);
+      setCallStats(res.data);
+    } catch (err) {
+      console.error('Failed to fetch call stats');
+    }
+  };
 
   const fetchBranches = async () => {
     try {
@@ -64,7 +89,7 @@ const Dashboard = () => {
 
   const fetchPerformanceData = async () => {
     try {
-      const res = await api.get(`/reports/performance?branch=${selectedBranch}`);
+      const res = await api.get(`/reports/performance?branch=${selectedBranch}&date=${selectedDate}`);
       setPerformanceData(res.data);
     } catch (err) {
       console.error('Failed to fetch team performance');
@@ -73,7 +98,7 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const res = await api.get(`/reports/dashboard?branch=${selectedBranch}`);
+      const res = await api.get(`/reports/dashboard?branch=${selectedBranch}&date=${selectedDate}`);
       const data = res.data;
       setStats(data);
       if (data.categoryStats) setPolicyData(data.categoryStats);
@@ -133,15 +158,22 @@ const Dashboard = () => {
     { label: 'Third Party Insurance', value: tpCount,                         icon: Briefcase,   bgColor: 'bg-orange-100',  color: 'text-orange-600',  delay: 0.35 },
     { label: 'Total Incentives',      value: `₹${(stats?.totalIncentives || 0).toLocaleString()}`, icon: Banknote,    bgColor: 'bg-emerald-100', color: 'text-emerald-600', delay: 0.40 },
     { label: 'Premium Volume',        value: `₹${(stats?.totalPremium   || 0).toLocaleString()}`, icon: CreditCard,  bgColor: 'bg-indigo-100',  color: 'text-indigo-600',  delay: 0.45 },
+    { label: 'Total Calls',           value: callStats?.summary?.totalCalls || 0, icon: PhoneCall, bgColor: 'bg-blue-100', color: 'text-blue-600', delay: 0.50 },
+    { label: 'Interested',            value: callStats?.summary?.interested || 0, icon: Heart, bgColor: 'bg-pink-100', color: 'text-pink-600', delay: 0.55 },
+    { label: 'Not Interested',        value: callStats?.summary?.notInterested || 0, icon: X, bgColor: 'bg-red-100', color: 'text-red-600', delay: 0.60 },
+    { label: 'Paid Calls',            value: callStats?.summary?.paidCalls || 0, icon: CreditCard, bgColor: 'bg-green-100', color: 'text-green-600', delay: 0.65 },
+    { label: 'Non-Paid Calls',        value: callStats?.summary?.nonPaidCalls || 0, icon: AlertCircle, bgColor: 'bg-gray-100', color: 'text-gray-600', delay: 0.70 },
   ];
 
   const employeeStats = [
-    { label: 'Today Calls Done',      value: stats?.todayCallsDone     || 0,  icon: PhoneCall,   bgColor: 'bg-blue-100',    color: 'text-blue-600',    delay: 0.05 },
-    { label: 'Interested Customers',  value: stats?.interestedLeads    || 0,  icon: Heart,       bgColor: 'bg-pink-100',    color: 'text-pink-600',    delay: 0.10 },
-    { label: 'Payment Completed',     value: stats?.paymentsCompleted  || 0,  icon: CheckCircle, bgColor: 'bg-green-100',   color: 'text-green-600',   delay: 0.15 },
-    { label: 'OD Conversions',        value: odCount,                         icon: Shield,      bgColor: 'bg-amber-100',   color: 'text-amber-600',   delay: 0.20 },
-    { label: 'Third Party Conv.',     value: tpCount,                         icon: Briefcase,   bgColor: 'bg-orange-100',  color: 'text-orange-600',  delay: 0.25 },
-    { label: 'Total Incentives',      value: `₹${(stats?.totalIncentives || 0).toLocaleString()}`, icon: Banknote,    bgColor: 'bg-emerald-100', color: 'text-emerald-600', delay: 0.30 },
+    { label: 'Total Calls',           value: callStats?.summary?.totalCalls || 0,  icon: PhoneCall,   bgColor: 'bg-blue-100',    color: 'text-blue-600',    delay: 0.05 },
+    { label: 'Interested',            value: callStats?.summary?.interested || 0,  icon: Heart,       bgColor: 'bg-pink-100',    color: 'text-pink-600',    delay: 0.10 },
+    { label: 'Not Interested',        value: callStats?.summary?.notInterested || 0, icon: X, bgColor: 'bg-red-100', color: 'text-red-600', delay: 0.15 },
+    { label: 'Paid Calls',            value: callStats?.summary?.paidCalls  || 0,  icon: Banknote,    bgColor: 'bg-green-100',   color: 'text-green-600',   delay: 0.20 },
+    { label: 'Non-Paid Calls',        value: callStats?.summary?.nonPaidCalls || 0, icon: AlertCircle, bgColor: 'bg-orange-100',  color: 'text-orange-600',  delay: 0.25 },
+    { label: 'Completed',             value: callStats?.summary?.completed || 0, icon: CheckCircle, bgColor: 'bg-emerald-100', color: 'text-emerald-600', delay: 0.30 },
+    { label: 'Not Picking',           value: callStats?.summary?.unreachable || 0, icon: Clock, bgColor: 'bg-gray-100', color: 'text-gray-600', delay: 0.35 },
+    { label: 'Total Incentives',      value: `₹${(stats?.totalIncentives || 0).toLocaleString()}`, icon: Award,    bgColor: 'bg-indigo-100', color: 'text-indigo-600', delay: 0.40 },
   ];
 
   const defaultChartData = [
@@ -194,6 +226,24 @@ const Dashboard = () => {
               </select>
             </div>
           )}
+          {user?.role === 'admin' && (
+            <div className="flex items-center gap-3 px-4 py-2.5 bg-[var(--bg-card)] border border-[var(--border-light)] rounded-2xl shadow-sm">
+              <div className="flex items-center gap-2 border-r border-[var(--border-light)] pr-3 mr-1">
+                <Users size={14} className="text-primary" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-[var(--text-muted)]">Team Leader</span>
+              </div>
+              <select 
+                value={selectedTL}
+                onChange={(e) => setSelectedTL(e.target.value)}
+                className="bg-transparent text-[var(--text-main)] font-bold text-xs outline-none cursor-pointer hover:text-primary transition-colors min-w-[120px]"
+              >
+                <option value="">All Team Leaders</option>
+                {teamLeaders.map(tl => (
+                  <option key={tl._id} value={tl._id}>{tl.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           {!isEmployee && (
             <button 
               onClick={() => window.open('/api/reports/export/leads', '_blank')}
@@ -203,11 +253,14 @@ const Dashboard = () => {
               Export CSV
             </button>
           )}
-          <div className="flex items-center gap-3 px-5 py-3 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-light)]">
+          <div className="flex items-center gap-3 px-5 py-3 bg-[var(--bg-main)] rounded-2xl border border-[var(--border-light)] focus-within:border-primary transition-all group">
             <Calendar size={18} className="text-primary" />
-            <span className="text-sm font-black text-[var(--text-main)] font-mono">
-              {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-            </span>
+            <input 
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-transparent border-none outline-none text-xs font-black text-[var(--text-main)] font-mono uppercase tracking-widest cursor-pointer"
+            />
           </div>
         </div>
       </div>
@@ -434,6 +487,8 @@ const Dashboard = () => {
                     <tr className="bg-gray-50 border-b border-gray-100">
                       <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Agent</th>
                       <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Branch</th>
+                      <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Calls</th>
+                      <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Interest</th>
                       <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Conv.</th>
                       <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Volume</th>
                       <th className="px-6 sm:px-10 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Incentive</th>
@@ -456,6 +511,8 @@ const Dashboard = () => {
                         <td className="px-6 sm:px-10 py-4 sm:py-6">
                           <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest bg-gray-100 px-2 py-1 rounded-full whitespace-nowrap">{agent.branch}</span>
                         </td>
+                        <td className="px-6 sm:px-10 py-4 sm:py-6 font-bold text-gray-900">{agent.calls || 0}</td>
+                        <td className="px-6 sm:px-10 py-4 sm:py-6 font-bold text-pink-600">{agent.interested || 0}</td>
                         <td className="px-6 sm:px-10 py-4 sm:py-6 font-bold text-gray-900">{agent.conversions || 0}</td>
                         <td className="px-6 sm:px-10 py-4 sm:py-6 font-bold text-gray-900 whitespace-nowrap">₹{(agent.premium || 0).toLocaleString()}</td>
                         <td className="px-6 sm:px-10 py-4 sm:py-6">

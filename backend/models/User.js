@@ -8,6 +8,7 @@ const userSchema = new mongoose.Schema({
   phone: { type: String },
   role: { type: String, enum: ['admin', 'employee', 'team_leader'], default: 'employee' },
   team: { type: String, default: 'Default' },
+  teamLeader: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   branch: { type: String },
   incentivesWallet: {
     pending: { type: Number, default: 0 },

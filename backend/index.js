@@ -10,6 +10,7 @@ import announcementRoutes from './routes/announcements.js'
 import paymentRoutes from './routes/payments.js'
 import reportRoutes from './routes/reports.js'
 import seedRoutes from './routes/seed.js'
+import callRoutes from './routes/calls.js'
 
 dotenv.config()
 
@@ -31,6 +32,7 @@ app.use('/api/announcements', announcementRoutes)
 app.use('/api/payments', paymentRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/seed', seedRoutes)
+app.use('/api/calls', callRoutes)
 
 // Fallback routes for when /api is stripped by proxy/rewrites
 app.use('/auth', authRoutes)
@@ -41,6 +43,7 @@ app.use('/announcements', announcementRoutes)
 app.use('/payments', paymentRoutes)
 app.use('/reports', reportRoutes)
 app.use('/seed', seedRoutes)
+app.use('/calls', callRoutes)
 
 app.get('/', (req, res) => {
   res.send('FIC Insurance CRM API is running...')

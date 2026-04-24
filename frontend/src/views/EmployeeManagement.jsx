@@ -32,15 +32,38 @@ const EmployeeManagement = () => {
     email: '',
     password: 'password123',
     role: 'employee',
-    branch: user?.branch || 'Main Office',
+    branch: user?.branch || '',
+    teamLeader: '',
     team: 'Direct Sales'
   };
   const [formData, setFormData] = useState(initialFormState);
   const [editingId, setEditingId] = useState(null);
+  const [teamLeaders, setTeamLeaders] = useState([]);
+  const [branches, setBranches] = useState([]);
 
   useEffect(() => {
     fetchEmployees();
+    fetchTeamLeaders();
+    fetchBranches();
   }, [user]);
+
+  const fetchTeamLeaders = async () => {
+    try {
+      const res = await api.get('/users/team-leaders');
+      setTeamLeaders(res.data);
+    } catch (err) {
+      console.error('Failed to fetch team leaders');
+    }
+  };
+
+  const fetchBranches = async () => {
+    try {
+      const res = await api.get('/users/branches');
+      setBranches(res.data);
+    } catch (err) {
+      console.error('Failed to fetch branches');
+    }
+  };
 
   const fetchEmployees = async () => {
     try {
@@ -69,7 +92,9 @@ const EmployeeManagement = () => {
       email: emp.email,
       role: emp.role || 'employee',
       branch: emp.branch || 'Main Office',
-      team: emp.team || 'Direct Sales'
+      team: emp.team || 'Direct Sales',
+      teamLeader: emp.teamLeader?._id || emp.teamLeader || '',
+      password: ''
     });
     setEditingId(emp._id);
     setShowAddModal(true);
@@ -264,19 +289,17 @@ const EmployeeManagement = () => {
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
                   />
                 </div>
-                {!editingId && (
-                  <div>
-                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Initial Password</label>
-                    <input
-                      type="text"
-                      required
-                      className="input-field"
-                      placeholder="Enter temporary password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">{editingId ? 'Reset Password' : 'Initial Password'}</label>
+                  <input
+                    type="text"
+                    required={!editingId}
+                    className="input-field"
+                    placeholder={editingId ? 'Leave blank to keep current' : 'Enter temporary password'}
+                    value={formData.password}
+                    onChange={(e) => setFormData({...formData, password: e.target.value})}
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-5">
                   <div>
                     <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Role</label>
@@ -298,13 +321,28 @@ const EmployeeManagement = () => {
                       disabled={user?.role === 'team_leader'}
                       onChange={(e) => setFormData({...formData, branch: e.target.value})}
                     >
-                      <option value="Thirupathur">Thirupathur</option>
-                      <option value="Krishanagiri">Krishanagiri</option>
-                      <option value="Chennai">Chennai</option>
-                      <option value="Bangalore">Bangalore</option>
+                      <option value="">Select Branch</option>
+                      {branches.map(b => (
+                        <option key={b} value={b}>{b}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
+                {formData.role === 'employee' && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest mb-2">Assign Team Leader</label>
+                    <select
+                      className="input-field cursor-pointer"
+                      value={formData.teamLeader || ''}
+                      onChange={(e) => setFormData({...formData, teamLeader: e.target.value})}
+                    >
+                      <option value="">Select Team Leader</option>
+                      {teamLeaders.map(tl => (
+                        <option key={tl._id} value={tl._id}>{tl.name} ({tl.branch})</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="flex gap-4 pt-2">
                   <button
                     type="button"
