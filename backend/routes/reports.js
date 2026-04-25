@@ -7,6 +7,7 @@ import Incentive from '../models/Incentive.js'
 import User from '../models/User.js'
 import Call from '../models/Call.js'
 import DailyReport from '../models/DailyReport.js'
+import Target from '../models/Target.js'
 import { authGuard } from '../middleware/auth.js'
 import { allowRoles } from '../middleware/roles.js'
 
@@ -30,7 +31,7 @@ router.get('/dashboard', async (req, res) => {
     userQuery = { _id: { $in: await User.find({ teamLeader: req.user._id }).distinct('_id') } }
   } else if (req.user.role === 'admin') {
     let adminUserQuery = {};
-    if (branch && branch !== 'All') adminUserQuery.branch = branch;
+    if (branch && branch !== 'All' && branch !== 'undefined') adminUserQuery.branch = branch;
     const branchUsers = await User.find(adminUserQuery).select('_id')
     const userIds = branchUsers.map(u => u._id)
     query = { assignedTo: { $in: userIds } }
@@ -52,15 +53,15 @@ router.get('/dashboard', async (req, res) => {
       paymentQuery = { sentBy: req.user._id }
   }
 
-  const odCount = await Lead.countDocuments({ ...query, insuranceType: 'od', status: 'issued' })
-  const thirdPartyCount = await Lead.countDocuments({ ...query, insuranceType: 'third_party', status: 'issued' })
+  const odCount = await Lead.countDocuments({ ...query, insuranceType: 'od', status: 'Converted' })
+  const thirdPartyCount = await Lead.countDocuments({ ...query, insuranceType: 'third_party', status: 'Converted' })
   
   // Dynamic Category Stats (assuming insuranceType mapping)
   const categoryStats = [
     { name: 'Motor (OD)', value: odCount, color: '#1E3A8A' },
     { name: 'Motor (TP)', value: thirdPartyCount, color: '#10B981' },
-    { name: 'Health', value: await Lead.countDocuments({ ...query, insuranceType: 'health', status: 'issued' }), color: '#F59E0B' },
-    { name: 'Life', value: await Lead.countDocuments({ ...query, insuranceType: 'life', status: 'issued' }), color: '#EC4899' },
+    { name: 'Health', value: await Lead.countDocuments({ ...query, insuranceType: 'health', status: 'Converted' }), color: '#F59E0B' },
+    { name: 'Life', value: await Lead.countDocuments({ ...query, insuranceType: 'life', status: 'Converted' }), color: '#EC4899' },
   ];
 
   // 7-day conversion history (AreaChart data)
@@ -75,7 +76,7 @@ router.get('/dashboard', async (req, res) => {
     const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
     const count = await Lead.countDocuments({ 
         ...query, 
-        status: 'issued', 
+        status: 'Converted', 
         updatedAt: { $gte: d, $lte: dayEnd } 
     });
     last7Days.push({ name: dayName, count });
@@ -116,7 +117,29 @@ router.get('/dashboard', async (req, res) => {
   ])
   const m = manualStats[0] || { totalCalls: 0, interested: 0 }
 
+  const convertedLeads = await Lead.countDocuments({ ...query, status: 'Converted' })
+  const conversionPercentage = totalLeads > 0 ? ((convertedLeads / totalLeads) * 100).toFixed(1) : 0;
+
+  const totalEmployees = await User.countDocuments(req.user.role === 'admin' ? { role: 'employee' } : (req.user.role === 'team_leader' ? { role: 'employee', teamLeader: req.user._id } : { _id: req.user._id }))
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const targets = await Target.find({ month: currentMonth, user: { $in: userQuery._id.$in || [req.user._id] } });
+  const totalAssignedPremium = targets.reduce((sum, t) => sum + (t.premiumTarget || 0), 0);
+  const totalAchievedPremium = targets.reduce((sum, t) => sum + (t.achieved?.premium || 0), 0);
+  
+  const pendingFollowUps = await Lead.countDocuments({ ...query, status: 'Follow-up' });
+  const averagePremium = convertedLeads > 0 ? totalAchievedPremium / convertedLeads : 0;
+  
+  const myTodayReport = await DailyReport.findOne({ user: req.user._id, createdAt: { $gte: todayStart, $lte: todayEnd } });
+  const clockStatus = myTodayReport?.logoutTime ? 'clocked-out' : (myTodayReport?.loginTime ? 'clocked-in' : 'not-clocked-in');
+  const clockTimes = {
+    loginTime: myTodayReport?.loginTime,
+    logoutTime: myTodayReport?.logoutTime
+  };
+  
+  const dailyReports = await DailyReport.find({ user: { $in: userQuery._id.$in || [req.user._id] }, createdAt: { $gte: todayStart, $lte: todayEnd } }).populate('user', 'name role branch');
+
   res.json({
+    dailyReports,
     totalLeads,
     todayCallsDone: (await Lead.countDocuments({ ...query, status: 'called', updatedAt: { $gte: todayStart, $lte: todayEnd } })) + m.totalCalls,
     calledLeads,
@@ -134,6 +157,30 @@ router.get('/dashboard', async (req, res) => {
       incentives: leaderboardMap[user._id.toString()]?.incentives || 0,
       conversions: leaderboardMap[user._id.toString()]?.count || 0,
     })),
+    dailyLowPerformers: await Promise.all(
+        targets.sort((a, b) => (a.achieved?.premium || 0) - (b.achieved?.premium || 0))
+        .slice(0, 5)
+        .map(async (t) => {
+            const u = await User.findById(t.user).select('name email');
+            return {
+                name: u?.name || 'Unknown',
+                email: u?.email || '',
+                achievedPremium: t.achieved?.premium || 0,
+                targetPremium: t.premiumTarget || 0,
+            }
+        })
+    ),
+    // New Metrics
+    convertedLeads,
+    conversionPercentage,
+    totalEmployees,
+    totalAssignedPremium,
+    totalAchievedPremium,
+    pendingPremium: Math.max(0, totalAssignedPremium - totalAchievedPremium),
+    pendingFollowUps,
+    averagePremium,
+    clockStatus,
+    clockTimes,
   })
 })
 
@@ -187,7 +234,7 @@ router.get('/export/performance', allowRoles('admin', 'team_leader'), async (req
   ]
 
   for (const user of users) {
-    const conversions = await Lead.countDocuments({ assignedTo: user._id, status: 'issued' })
+    const conversions = await Lead.countDocuments({ assignedTo: user._id, status: 'Converted' })
     const totalPremium = await Payment.aggregate([
       { $match: { sentBy: user._id, status: 'completed' } },
       { $group: { _id: null, total: { $sum: '$amount' } } }
@@ -235,7 +282,7 @@ router.get('/performance', allowRoles('admin', 'team_leader'), async (req, res) 
   const users = await User.find(query).select('name email role branch team')
   
   const performanceData = await Promise.all(users.map(async (user) => {
-    const conversions = await Lead.countDocuments({ assignedTo: user._id, status: 'issued' })
+    const conversions = await Lead.countDocuments({ assignedTo: user._id, status: 'Converted' })
     const totalPremium = await Payment.aggregate([
       { $match: { sentBy: user._id, status: 'completed' } },
       { $group: { _id: null, total: { $sum: '$amount' } } }
@@ -280,16 +327,51 @@ router.get('/performance', allowRoles('admin', 'team_leader'), async (req, res) 
   res.json(performanceData)
 })
 
+router.post('/clock-in', async (req, res) => {
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0,0,0,0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23,59,59,999);
+    let report = await DailyReport.findOne({ user: req.user._id, createdAt: { $gte: todayStart, $lte: todayEnd } });
+    if (!report) {
+      report = new DailyReport({ user: req.user._id, summary: 'Pending EOD report', loginTime: new Date() });
+      await report.save();
+    } else if (!report.loginTime) {
+      report.loginTime = new Date();
+      await report.save();
+    }
+    res.json({ message: 'Clocked in successfully', loginTime: report.loginTime });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to clock in' });
+  }
+});
+
 router.post('/daily', async (req, res) => {
   try {
     const { summary, statsSnapshot } = req.body;
-    const report = new DailyReport({
-      user: req.user._id,
-      summary,
-      statsSnapshot
-    });
-    await report.save();
-    res.json({ message: 'Daily report submitted successfully' });
+    const todayStart = new Date();
+    todayStart.setHours(0,0,0,0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23,59,59,999);
+    
+    let report = await DailyReport.findOne({ user: req.user._id, createdAt: { $gte: todayStart, $lte: todayEnd } });
+    
+    if (report) {
+      report.summary = summary;
+      report.statsSnapshot = statsSnapshot;
+      report.logoutTime = new Date();
+      await report.save();
+    } else {
+      report = new DailyReport({
+        user: req.user._id,
+        summary,
+        statsSnapshot,
+        logoutTime: new Date()
+      });
+      await report.save();
+    }
+    res.json({ message: 'Daily report submitted successfully', logoutTime: report.logoutTime });
   } catch (err) {
     res.status(500).json({ message: 'Failed to submit report' });
   }

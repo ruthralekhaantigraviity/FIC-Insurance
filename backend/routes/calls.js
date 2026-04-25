@@ -44,10 +44,10 @@ router.get('/stats', async (req, res) => {
     } else if (req.user.role === 'team_leader') {
       employeeQuery.teamLeader = req.user._id;
     } else if (req.user.role === 'admin') {
-      if (branch && branch !== 'All') {
+      if (branch && branch !== 'All' && branch !== 'undefined') {
         employeeQuery.branch = branch;
       }
-      if (teamLeader) {
+      if (teamLeader && teamLeader !== 'undefined' && teamLeader !== '') {
         employeeQuery.teamLeader = teamLeader;
       }
     }

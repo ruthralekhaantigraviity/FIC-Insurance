@@ -14,17 +14,19 @@ const dailyReportSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  loginTime: { type: Date },
+  logoutTime: { type: Date },
   fileUrl: {
     type: String
   },
   statsSnapshot: {
     totalCalls: { type: Number, default: 0 },
+    meetingsDone: { type: Number, default: 0 },
+    policiesClosed: { type: Number, default: 0 },
+    pendingFollowUps: { type: Number, default: 0 },
     interested: { type: Number, default: 0 },
     notInterested: { type: Number, default: 0 },
     paid: { type: Number, default: 0 },
-    nonPaid: { type: Number, default: 0 },
-    completed: { type: Number, default: 0 },
-    notPicking: { type: Number, default: 0 },
     issued: { type: Number, default: 0 }
   }
 }, { timestamps: true });

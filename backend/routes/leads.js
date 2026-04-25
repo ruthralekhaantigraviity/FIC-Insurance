@@ -56,7 +56,7 @@ router.post('/import', [authGuard, allowRoles('admin', 'team_leader'), upload.si
       city: item.city,
       vehicleNumber: item.vehicleNumber,
       assignedBy: req.user._id,
-      status: 'new'
+      status: 'New Lead'
     })).filter(l => l.name && l.phone);
 
     if (leads.length === 0) {
@@ -74,6 +74,40 @@ router.post('/import', [authGuard, allowRoles('admin', 'team_leader'), upload.si
   }
 });
 
+// @route   POST api/leads
+// @desc    Add a single lead manually
+router.post('/', authGuard, async (req, res) => {
+  try {
+    const { name, phone, email, insuranceType, premiumAmount, followUpDate, status, remarks } = req.body;
+    
+    if (!name || !phone) {
+      return res.status(400).json({ message: 'Name and phone are required' });
+    }
+
+    const lead = new Lead({
+      name,
+      phone,
+      email,
+      insuranceType: insuranceType || 'od',
+      premiumAmount: premiumAmount || 0,
+      followUpDate,
+      status: status || 'New Lead',
+      assignedTo: req.user._id,
+      assignedBy: req.user._id
+    });
+
+    if (remarks) {
+      lead.notes.push({ text: remarks, author: req.user._id });
+    }
+
+    await lead.save();
+    res.status(201).json(lead);
+  } catch (err) {
+    console.error('Add lead error:', err);
+    res.status(500).json({ message: 'Failed to add lead' });
+  }
+});
+
 // @route   GET api/leads
 // @desc    Get all leads (Role-based filtering)
 router.get('/', authGuard, async (req, res) => {
@@ -82,7 +116,7 @@ router.get('/', authGuard, async (req, res) => {
     if (req.user.role === 'employee') {
       query = { assignedTo: req.user._id };
     } else if (req.user.role === 'team_leader') {
-      query = { branch: req.user.branch };
+      query = { assignedTo: { $in: await User.find({ teamLeader: req.user._id }).distinct('_id') } };
     }
     
     const leads = await Lead.find(query).populate('assignedTo', 'name').sort({ createdAt: -1 });
@@ -140,9 +174,9 @@ router.put('/assign', [authGuard, allowRoles('admin', 'team_leader')], async (re
     
     await Promise.all(leads.map(async (lead) => {
       lead.assignedTo = employeeId;
-      lead.status = 'assigned';
+      lead.status = 'New Lead';
       lead.history.push({
-        status: 'assigned',
+        status: 'New Lead',
         author: req.user._id,
         note: `Lead assigned to ${employee.name} by ${req.user.name || 'Admin/TL'}`
       });

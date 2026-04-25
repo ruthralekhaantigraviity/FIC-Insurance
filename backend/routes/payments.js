@@ -63,18 +63,36 @@ router.post('/policy', allowRoles('admin', 'employee'), async (req, res) => {
     premium,
     payment: paymentId,
     policyNumber: `FIC-${Date.now()}`,
-    status: 'issued',
+    status: 'Converted',
     issuedAt: new Date(),
   })
   await policy.save()
-  lead.status = 'issued'
+  lead.status = 'Converted'
   lead.insuranceType = insuranceType
   lead.policyExpiryDate = policyExpiryDate
-  lead.history.push({ status: 'issued', author: req.user._id, note: 'Policy issued' })
+  lead.history.push({ status: 'Converted', author: req.user._id, note: 'Policy issued' })
   await lead.save()
   const slab = await IncentiveSetting.findOne({ insuranceType, active: true })
   let incentiveAmount = 0
   
+  // Update Target achievement
+  const currentMonth = new Date().toISOString().slice(0, 7)
+  const Target = (await import('../models/Target.js')).default
+  let target = await Target.findOne({ user: lead.assignedTo || req.user._id, month: currentMonth })
+  let multiplier = 1.0;
+
+  if (target && target.premiumTarget > 0) {
+    target.achieved.premium += premium;
+    target.achieved.policies += 1;
+    await target.save();
+
+    const percentage = (target.achieved.premium / target.premiumTarget) * 100;
+    if (percentage >= 120) multiplier = 1.5; // bonus
+    else if (percentage >= 100) multiplier = 1.0; // full
+    else if (percentage >= 80) multiplier = 0.5; // basic
+    else multiplier = 0; // below 80% earns no incentive
+  }
+
   if (slab) {
     // Calculate based on type
     if (slab.type === 'percentage') {
@@ -82,22 +100,26 @@ router.post('/policy', allowRoles('admin', 'employee'), async (req, res) => {
     } else {
       incentiveAmount = slab.value
     }
+    
+    incentiveAmount = incentiveAmount * multiplier;
 
-    const incentive = new Incentive({
-      user: lead.assignedTo || req.user._id,
-      lead: leadId,
-      insuranceType,
-      amount: incentiveAmount,
-      status: 'awarded',
-      awardedAt: new Date(),
-    })
-    await incentive.save()
+    if (incentiveAmount > 0) {
+      const incentive = new Incentive({
+        user: lead.assignedTo || req.user._id,
+        lead: leadId,
+        insuranceType,
+        amount: incentiveAmount,
+        status: 'awarded',
+        awardedAt: new Date(),
+      })
+      await incentive.save()
 
-    // Sync to User Wallet
-    if (lead.assignedTo) {
-      await User.findByIdAndUpdate(lead.assignedTo, {
-        $inc: { 'incentivesWallet.awarded': incentiveAmount }
-      });
+      // Sync to User Wallet
+      if (lead.assignedTo) {
+        await User.findByIdAndUpdate(lead.assignedTo, {
+          $inc: { 'incentivesWallet.awarded': incentiveAmount }
+        });
+      }
     }
   }
   res.status(201).json({ policy, incentiveAmount })

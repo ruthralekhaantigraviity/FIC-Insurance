@@ -15,6 +15,7 @@ import Incentives from './views/Incentives';
 import Payments from './views/Payments';
 import Policies from './views/Policies';
 import PerformanceReports from './views/PerformanceReports';
+import TargetManagement from './views/TargetManagement';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useContext(AuthContext);
@@ -110,6 +111,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <PerformanceReports />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/targets" 
+            element={
+              <ProtectedRoute>
+                <TargetManagement />
               </ProtectedRoute>
             } 
           />

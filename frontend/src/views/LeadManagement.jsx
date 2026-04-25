@@ -6,7 +6,7 @@ import {
   MoreHorizontal, Download, CheckCircle, Clock,
   Car, Briefcase, TrendingUp, AlertCircle,
   Heart, Shield, Zap, Activity, ChevronRight, X, ArrowLeft,
-  CreditCard, PhoneCall, Trash2
+  CreditCard, PhoneCall, Trash2, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
@@ -28,6 +28,8 @@ const LeadManagement = () => {
   const [file, setFile] = useState(null);
   const [showCallLogModal, setShowCallLogModal] = useState(false);
   const [callLogData, setCallLogData] = useState({ status: 'interested', isPaid: false, notes: '' });
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newLead, setNewLead] = useState({ name: '', phone: '', email: '', insuranceType: 'od', premiumAmount: '', followUpDate: '', status: 'New Lead', remarks: '' });
 
   useEffect(() => {
     console.log('LeadManagement Terminal Initialized');
@@ -105,8 +107,8 @@ const LeadManagement = () => {
   const handleCallInitiated = (lead) => {
     setSelectedLead(lead);
     setShowCallLogModal(true);
-    if (lead.status === 'new') {
-      api.put(`/leads/${lead._id}/status`, { status: 'called', note: 'Call initiated via terminal dialer' })
+    if (lead.status === 'New Lead') {
+      api.put(`/leads/${lead._id}/status`, { status: 'Follow-up', note: 'Call initiated via terminal dialer' })
          .then(() => fetchLeads());
     }
   };
@@ -136,11 +138,24 @@ const LeadManagement = () => {
     }
   };
 
+  const handleAddLead = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post('/leads', newLead);
+      toast.success('Lead manually added');
+      setShowAddModal(false);
+      setNewLead({ name: '', phone: '', email: '', insuranceType: 'motor', premiumAmount: '', followUpDate: '', status: 'New Lead', remarks: '' });
+      fetchLeads();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to add lead');
+    }
+  };
+
   const handleStatusUpdate = async (e) => {
     e.preventDefault();
     setIsUpdating(true);
     try {
-      if (statusUpdate.status === 'issued') {
+      if (statusUpdate.status === 'Converted') {
         await api.post('/payments/policy', {
           leadId: selectedLead._id,
           insuranceType: statusUpdate.insuranceType || 'od',
@@ -212,11 +227,13 @@ const LeadManagement = () => {
   };
 
   const statusMap = {
-    'new': { label: 'New Lead', color: 'bg-blue-600', icon: TrendingUp },
-    'interested': { label: 'Interested', color: 'bg-pink-500', icon: Heart },
-    'payment_link_sent': { label: 'Link Sent', color: 'bg-amber-500', icon: Clock },
-    'issued': { label: 'Policy Issued', color: 'bg-green-500', icon: CheckCircle },
-    'cancelled': { label: 'Cancelled', color: 'bg-red-500', icon: X },
+    'New Lead': { label: 'New Lead', color: 'bg-blue-600', icon: TrendingUp },
+    'Follow-up': { label: 'Follow-up', color: 'bg-cyan-500', icon: Clock },
+    'Interested': { label: 'Interested', color: 'bg-pink-500', icon: Heart },
+    'Document Collected': { label: 'Doc Collected', color: 'bg-purple-500', icon: Briefcase },
+    'Policy Submitted': { label: 'Submitted', color: 'bg-amber-500', icon: Upload },
+    'Converted': { label: 'Converted', color: 'bg-green-500', icon: CheckCircle },
+    'Rejected': { label: 'Rejected', color: 'bg-red-500', icon: X },
   };
 
   const categoryMap = {
@@ -317,6 +334,15 @@ const LeadManagement = () => {
             <Filter size={22} />
           </button>
           <div className="h-10 w-px bg-gray-100 mx-2"></div>
+          {user?.role === 'employee' && (
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-3 px-6 py-4 bg-green-500/10 text-green-600 border border-green-500/20 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-green-500 hover:text-white transition-all shadow-sm"
+            >
+              <Plus size={18} />
+              Add Lead
+            </button>
+          )}
           <button 
             onClick={() => window.open('/api/reports/export/leads', '_blank')}
             className="flex items-center gap-3 px-6 py-4 bg-primary/10 text-primary border border-primary/20 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-sm"
@@ -373,7 +399,7 @@ const LeadManagement = () => {
                   </tr>
                 ) : leads.map((lead, i) => {
                   const category = categoryMap[lead.insuranceType] || categoryMap['motor'];
-                  const status = statusMap[lead.status] || statusMap['new'];
+                  const status = statusMap[lead.status] || statusMap['New Lead'];
                   const confidence = 65 + ((lead.name || '').length * 3) % 30;
                   return (
                     <motion.tr 
@@ -556,7 +582,7 @@ const LeadManagement = () => {
                       </div>
                     </div>
 
-                    {statusUpdate.status === 'issued' && (
+                    {statusUpdate.status === 'Converted' && (
                       <div className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in slide-in-from-top-4">
                         <div className="space-y-4">
                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Total Policy Premium (INR)</label>
@@ -602,7 +628,7 @@ const LeadManagement = () => {
                     <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-6">Channel Transmission</h4>
                     <div className="flex flex-wrap gap-4">
                        <button 
-                          onClick={() => handleWhatsApp(selectedLead.status === 'issued' ? 'renewal' : 'payment')}
+                          onClick={() => handleWhatsApp(selectedLead.status === 'Converted' ? 'renewal' : 'payment')}
                           className="flex-1 min-w-[140px] p-5 rounded-3xl bg-[#25D366]/10 text-[#25D366] border border-[#25D366]/20 flex flex-col items-center gap-3 hover:bg-[#25D366] hover:text-white transition-all group"
                        >
                           <Activity size={24} className="group-hover:scale-110 transition-transform" />
@@ -702,8 +728,75 @@ const LeadManagement = () => {
                 </div>
                 <div className="flex gap-6">
                   <button type="button" onClick={() => setShowImportModal(false)} className="flex-1 py-5 bg-gray-100 text-gray-500 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-gray-200 transition-all border border-gray-100 font-mono">Cancel</button>
-                  <button type="submit" disabled={!file} className="flex-[2] btn-primary py-5 disabled:grayscale shadow-2xl shadow-blue-900/40">Authorize Injection</button>
+                  <button type="submit" disabled={!file} className={`w-full py-5 rounded-2xl font-black tracking-widest uppercase transition-all flex items-center justify-center gap-3 ${file ? 'bg-primary text-white hover:bg-blue-600 shadow-xl shadow-blue-900/20' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+                    <Upload size={20} />
+                    Execute Import
+                  </button>
                 </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-gray-900/60 backdrop-blur-md">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[var(--bg-card)] rounded-[2.5rem] shadow-2xl w-full max-w-2xl overflow-hidden border border-[var(--border-light)] max-h-[90vh] overflow-y-auto"
+            >
+              <div className="bg-primary p-8 text-white relative">
+                <button onClick={() => setShowAddModal(false)} className="absolute top-6 right-6 p-3 rounded-2xl bg-white/10 hover:bg-white/20 transition-all z-10"><X size={20}/></button>
+                <h3 className="text-3xl font-black tracking-tighter mb-2 italic">Manual Lead Injection</h3>
+                <p className="text-blue-100 font-medium">Add a new risk profile to the CRM</p>
+              </div>
+              <form onSubmit={handleAddLead} className="p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Customer Name</label>
+                    <input type="text" required value={newLead.name} onChange={(e) => setNewLead({...newLead, name: e.target.value})} className="input-field" placeholder="John Doe" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Phone Number</label>
+                    <input type="text" required value={newLead.phone} onChange={(e) => setNewLead({...newLead, phone: e.target.value})} className="input-field" placeholder="+91 XXXXX XXXXX" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Insurance Type</label>
+                    <select value={newLead.insuranceType} onChange={(e) => setNewLead({...newLead, insuranceType: e.target.value})} className="input-field cursor-pointer">
+                      <option value="od">Motor (OD)</option>
+                      <option value="third_party">Motor (TP)</option>
+                      <option value="health">Health Insurance</option>
+                      <option value="life">Life Insurance</option>
+                      <option value="property">Property Insurance</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Premium Amount (Est.)</label>
+                    <input type="number" value={newLead.premiumAmount} onChange={(e) => setNewLead({...newLead, premiumAmount: e.target.value})} className="input-field" placeholder="15000" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Follow-up Date</label>
+                    <input type="date" value={newLead.followUpDate} onChange={(e) => setNewLead({...newLead, followUpDate: e.target.value})} className="input-field cursor-pointer" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Status</label>
+                    <select value={newLead.status} onChange={(e) => setNewLead({...newLead, status: e.target.value})} className="input-field cursor-pointer">
+                      {Object.keys(statusMap).map((k) => (
+                        <option key={k} value={k}>{statusMap[k].label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-[var(--text-muted)] uppercase tracking-widest">Remarks</label>
+                  <textarea rows="3" value={newLead.remarks} onChange={(e) => setNewLead({...newLead, remarks: e.target.value})} className="input-field resize-none" placeholder="Add optional remarks..." />
+                </div>
+                <button type="submit" className="w-full py-5 rounded-2xl bg-primary text-white font-black tracking-widest uppercase hover:bg-blue-600 transition-all shadow-xl shadow-blue-900/20">
+                  Save Lead
+                </button>
               </form>
             </motion.div>
           </div>

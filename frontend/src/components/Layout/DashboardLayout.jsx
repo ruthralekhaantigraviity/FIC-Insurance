@@ -125,6 +125,10 @@ const DashboardLayout = ({ children }) => {
     { to: '/announcements', icon: Bell, label: 'Updates' },
   ];
 
+  if (user?.role === 'admin' || user?.role === 'team_leader') {
+    navItems.push({ to: '/targets', icon: Users, label: 'Targets' });
+  }
+
   if (user?.role === 'admin') {
     navItems.push({ to: '/employees', icon: Users, label: 'Staff Management' });
     navItems.push({ to: '/payments', icon: CreditCard, label: 'Payments' });

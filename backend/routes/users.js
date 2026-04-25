@@ -62,42 +62,67 @@ router.get('/team', allowRoles('admin', 'team_leader'), async (req, res) => {
 })
 
 router.post('/', allowRoles('admin'), async (req, res) => {
-  const { name, email, phone, role, team, branch, password, teamLeader } = req.body
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'Name, email and password are required' })
+  try {
+    const { name, email, phone, role, team, branch, password, teamLeader } = req.body
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'Name, email and password are required' })
+    }
+    const normalizedEmail = String(email).trim().toLowerCase()
+    const existing = await User.findOne({ email: normalizedEmail })
+    if (existing) {
+      return res.status(400).json({ message: 'Email already exists' })
+    }
+    
+    const userData = { name, email: normalizedEmail, phone, role, team, branch, password }
+    if (teamLeader && teamLeader !== '') {
+      userData.teamLeader = teamLeader
+    }
+
+    const user = new User(userData)
+    await user.save()
+    res.status(201).json({ message: 'Employee created', user: { id: user._id, name, email: normalizedEmail, role, team, phone, branch, teamLeader: user.teamLeader } })
+  } catch (err) {
+    console.error('Create user error:', err);
+    res.status(500).json({ message: err.message });
   }
-  const normalizedEmail = String(email).trim().toLowerCase()
-  const existing = await User.findOne({ email: normalizedEmail })
-  if (existing) {
-    return res.status(400).json({ message: 'Email already exists' })
-  }
-  const user = new User({ name, email: normalizedEmail, phone, role, team, branch, password, teamLeader })
-  await user.save()
-  res.status(201).json({ message: 'Employee created', user: { id: user._id, name, email: normalizedEmail, role, team, phone, branch, teamLeader } })
 })
 
 router.put('/:id', allowRoles('admin'), async (req, res) => {
-  const updates = { ...req.body }
-  // Don't hash password here, model pre-save hook handles it if modified
-  const user = await User.findById(req.params.id)
-  if (!user) return res.status(404).json({ message: 'User not found' })
-  
-  Object.keys(updates).forEach(key => {
-    if (key === 'password' && (!updates[key] || updates[key].trim() === '')) {
-      return;
-    }
-    user[key] = updates[key]
-  })
-  
-  await user.save()
-  const updatedUser = await User.findById(user._id).select('-password')
-  res.json(updatedUser)
+  try {
+    const updates = { ...req.body }
+    // Don't hash password here, model pre-save hook handles it if modified
+    const user = await User.findById(req.params.id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    
+    Object.keys(updates).forEach(key => {
+      if (key === 'password' && (!updates[key] || updates[key].trim() === '')) {
+        return;
+      }
+      if (key === 'teamLeader' && updates[key] === '') {
+        user[key] = undefined;
+        return;
+      }
+      user[key] = updates[key]
+    })
+    
+    await user.save()
+    const updatedUser = await User.findById(user._id).select('-password')
+    res.json(updatedUser)
+  } catch (err) {
+    console.error('Update user error:', err);
+    res.status(500).json({ message: err.message });
+  }
 })
 
 router.delete('/:id', allowRoles('admin'), async (req, res) => {
-  const user = await User.findByIdAndDelete(req.params.id)
-  if (!user) return res.status(404).json({ message: 'User not found' })
-  res.json({ message: 'Employee deleted' })
+  try {
+    const user = await User.findByIdAndDelete(req.params.id)
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    res.json({ message: 'Employee deleted' })
+  } catch (err) {
+    console.error('Delete user error:', err);
+    res.status(500).json({ message: err.message });
+  }
 })
 
 export default router
